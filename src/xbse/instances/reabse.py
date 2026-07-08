@@ -84,14 +84,18 @@ class ReaBSEPairSource(PairSource):
             (held if b < self.holdout_frac else train).append((tid, tr))
         return train, held
 
+    AUG_PER_TASK = 16   # D4xcolor group is huge; sample many augmentations per task (fix data starvation)
+
     def train_triplets(self) -> Iterator[Triplet]:
         train, _ = self._split()
         n = len(train)
         for i, (_tid, tr) in enumerate(train):
-            anchor = _serialize(tr)
-            positive = _serialize(_augment(tr, seed=i))
-            negative = _serialize(train[(i + n // 2) % n][1])
-            yield Triplet(anchor=anchor, positive=positive, negative=negative)
+            for a in range(self.AUG_PER_TASK):
+                # augment BOTH anchor and positive -> forces group-invariance, not canonical->aug
+                anchor = _serialize(_augment(tr, seed=1000 * i + a))
+                positive = _serialize(_augment(tr, seed=1000 * i + a + 500))
+                negative = _serialize(train[(i + 1 + a) % n][1])   # vary the negative task too
+                yield Triplet(anchor=anchor, positive=positive, negative=negative)
 
     def heldout_eval(self) -> dict:
         _, held = self._split()
