@@ -14,10 +14,50 @@ import json
 import os
 from typing import Iterator
 
+import ast
+import random
+
 from ..pairs import PairSource, Triplet
 from ..admission import AdmissionCriteria
 
 CODEBSE_CONFIG = {"base_model": "BAAI/bge-m3", "holdout_frac": 0.1, "hf_dataset": "mbpp"}
+
+
+def _augment_code(code: str, seed: int) -> str:
+    """Group-augmentation for code: consistent local-variable RENAMING (the behaviour-preserving
+    'group', exactly analogous to ReaBSE's color permutation). Same I/O behaviour, different surface.
+    Falls back to the original on any parse/unparse failure."""
+    try:
+        tree = ast.parse(code)
+    except (SyntaxError, ValueError):
+        return code
+    locals_ = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.arg):
+            locals_.add(node.arg)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            locals_.add(node.id)
+    locals_ -= {"self", "cls"}
+    if not locals_:
+        return code
+    new = [f"v{i}" for i in range(len(locals_))]
+    random.Random(seed).shuffle(new)
+    mapping = dict(zip(sorted(locals_), new))
+
+    class _R(ast.NodeTransformer):
+        def visit_Name(self, n):
+            if n.id in mapping:
+                n.id = mapping[n.id]
+            return n
+        def visit_arg(self, n):
+            if n.arg in mapping:
+                n.arg = mapping[n.arg]
+            return n
+
+    try:
+        return ast.unparse(ast.fix_missing_locations(_R().visit(tree)))
+    except Exception:
+        return code
 
 
 class CodeBSEPairSource(PairSource):
@@ -59,12 +99,17 @@ class CodeBSEPairSource(PairSource):
             (held if b < self.holdout_frac else train).append(r)
         return train, held
 
+    AUG_PER_PROBLEM = 8   # variable-renaming group augmentation (fixes MBPP's ~974-problem starvation)
+
     def train_triplets(self) -> Iterator[Triplet]:
         train, _ = self._split()
         n = len(train)
         for i, (_tid, spec, code) in enumerate(train):
-            neg_code = train[(i + n // 2) % n][2]            # a different problem's code
-            yield Triplet(anchor=spec, positive=code, negative=neg_code)
+            for a in range(self.AUG_PER_PROBLEM):
+                aug = _augment_code(code, seed=1000 * i + a)     # same behaviour, renamed vars
+                neg = train[(i + 1 + a) % n][2]                  # a different problem's code
+                yield Triplet(anchor=spec, positive=aug, negative=neg)   # spec <-> behaviour
+                yield Triplet(anchor=code, positive=aug, negative=neg)   # behaviour-invariance (code<->code)
 
     def heldout_eval(self) -> dict:
         _, held = self._split()

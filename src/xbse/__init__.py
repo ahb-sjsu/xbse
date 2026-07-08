@@ -12,6 +12,7 @@ from .admission import AdmissionCriteria, AdmissionError
 from .objective import info_nce
 from .validate import fuzz_ratio, structure_vs_surface_auroc, gate, LEBSE_BAR
 from .report import Report, require_pass, NotValidatedError, hash_checkpoint
+from .discover import discover, frozen_proxy, print_table
 
 __all__ = [
     "BSEEncoder", "PairSource", "Triplet", "CircularityError",
