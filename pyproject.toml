@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xbse"
+version = "0.1.0"
+description = "Modular framework for domain-specific BERT Sentence Embeddings (LaBSE/LeBSE/MoBSE): shared encoder + contrastive objective + one validation gate, per-domain PairSource plugins"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Andrew H. Bond", email = "andrew.bond@sjsu.edu" }]
+keywords = ["sentence-embeddings", "contrastive-learning", "invariance", "moral-reasoning", "geometric-ethics", "nlp"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "torch>=2.1",
+    "sentence-transformers>=2.7",
+    "transformers>=4.40",
+    "numpy>=1.24",
+    "scikit-learn>=1.3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
