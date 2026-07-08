@@ -44,10 +44,11 @@ Everything else is shared and validated once.
 | `encoder.py` | `BSEEncoder`: base transformer → pooling → projection → L2-norm. Only base-model id + projection dim are config. | **exists** |
 | `pairs.py` | `PairSource`, `Triplet`: the per-domain interface. Declares invariant (positives) and separated (negatives). Exposes train/held-out split. | **exists** |
 | `objective.py` | Shared contrastive loss: InfoNCE + in-batch negatives + optional hard negatives; symmetric anchor↔positive. | **exists** |
-| `splits.py` | Constructs train/held-out splits **and asserts disjointness** between training pairs and any reserved downstream-test boundary. Throws on violation. | **missing — build next** |
-| `validate.py` | The hard gate. Standard battery every instance must pass: structure-vs-surface AUROC (held-out), non-domain control, surface-leak probe. Emits a signed report. Cannot mark "validated" without running. | **missing — build next** |
-| `metrics.py` | Shared geometric measurements: intrinsic-dimension estimators (ball-growth / MLE / effective-rank, with spread), geodesic-preservation score, angular fidelity. Used by both `validate` and `probes`. | **missing** |
-| `report.py` | Structured, hashable output for every validation/probe run: config, checkpoint hash, pre-registered thresholds, pass/fail. | **missing** |
+| `admission.py` | Executable §3.1 admission filter: `AdmissionCriteria` throws if invariant-structure / surface-class / independent-label-source is missing. `PairSource.check_admission()` runs it before training. | **exists** |
+| `splits.py` | `split_by_key` (deterministic, hash-based) + `assert_disjoint` — throws if a held-out / reserved boundary leaks into training. | **exists** |
+| `validate.py` | The hard gate: structure-vs-surface AUROC (held-out) + fuzz ratio + surface invariance, against the LeBSE bar. | **exists — non-domain control + surface-leak probe TODO** |
+| `report.py` | Signed `Report` (config, checkpoint hash, thresholds, pass/fail) + `require_pass()` that refuses to build tools on a FAIL or hash-mismatched checkpoint — makes falsification order runtime-enforced. | **exists** |
+| `metrics.py` | Shared geometric measurements: effective-rank intrinsic dimension + spatial autocorrelation (from the legal_h3 fix) + linear CKA (for the DAG "do lenses add info?" test). | **exists** |
 | `augment.py` | Registry of surface-invariance transforms (case, whitespace, paraphrase, back-translation, language swap). Each `PairSource` declares which are meaning-preserving *for its domain*. | **missing** |
 
 ### 2.2 Probes (`xbse/probes/`) — falsifiable experiments *about* an embedding
@@ -81,6 +82,22 @@ so the falsification order is enforced by the dependency graph.
 > **representation-invariant harm ledger** (invariance — testable), NOT a "Noether
 > conserved quantity" (conservation — not established). A function name that
 > overclaims is worse than a paper that does, because it *runs*.
+
+### 2.5 Composition (`xbse/compose/`) — a DAG of validated instances over one text
+Each `*-BSE` is a projection onto one structural axis (its invariance-quotient). Running one text
+through several — SciBSE ⊕ MoBSE ⊕ LeBSE ⊕ CodeBSE — yields a **disentangled multi-structure
+view** (scientific-claim vector, moral vector, legal-relatedness vector, …) instead of a general
+encoder's blurred mixture. A DAG can fuse-all (product-of-experts) or gate-route (MoE) to the
+relevant lenses. This is the natural encoder substrate for `erisml-compiler`'s framework-pluralist
+DAG-native IR: each lens = a validated `*-BSE`.
+
+Two gates, both non-negotiable:
+- **Composes VALIDATED instances only.** A DAG of ungated encoders is garbage fused confidently.
+  `compose/` imports instances that carry a PASS `Report` (via `require_pass`) — falsification
+  order, enforced. Downstream of validation, like tools.
+- **"Do the lenses carry independent information?" is a testable hypothesis**, not an assumption.
+  Measure cross-view CKA (`metrics.cka`); if MoBSE ≈ SciBSE on text X, the DAG adds nothing there.
+  Out of scope until ≥2 instances pass the gate.
 
 ---
 

@@ -7,11 +7,15 @@ discipline: build an instance -> validate (hard stop) -> only then earn downstre
 __version__ = "0.1.0"
 
 from .encoder import BSEEncoder
-from .pairs import PairSource, Triplet
+from .pairs import PairSource, Triplet, CircularityError
+from .admission import AdmissionCriteria, AdmissionError
 from .objective import info_nce
-from .validate import fuzz_ratio, structure_vs_surface_auroc, gate
+from .validate import fuzz_ratio, structure_vs_surface_auroc, gate, LEBSE_BAR
+from .report import Report, require_pass, NotValidatedError, hash_checkpoint
 
 __all__ = [
-    "BSEEncoder", "PairSource", "Triplet", "info_nce",
-    "fuzz_ratio", "structure_vs_surface_auroc", "gate",
+    "BSEEncoder", "PairSource", "Triplet", "CircularityError",
+    "AdmissionCriteria", "AdmissionError", "info_nce",
+    "fuzz_ratio", "structure_vs_surface_auroc", "gate", "LEBSE_BAR",
+    "Report", "require_pass", "NotValidatedError", "hash_checkpoint",
 ]

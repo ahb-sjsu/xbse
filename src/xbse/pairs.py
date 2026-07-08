@@ -13,6 +13,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Iterator
 
+from .admission import AdmissionCriteria
+
 
 @dataclass
 class Triplet:
@@ -30,9 +32,20 @@ def _norm(text: str) -> str:
 
 
 class PairSource(ABC):
-    """Yields training triplets for one domain. Subclass per *-BSE instance."""
+    """Yields training triplets for one domain. Subclass per *-BSE instance.
+
+    Every instance MUST declare `admission` (an AdmissionCriteria). check_admission() runs the
+    executable filter — a domain without a definable invariant structure, surface class, AND an
+    independent label source may not be built (design §3.1)."""
 
     name: str = "abstract"
+    admission: AdmissionCriteria | None = None
+
+    def check_admission(self) -> AdmissionCriteria:
+        if self.admission is None:
+            from .admission import AdmissionError
+            raise AdmissionError(f"[{self.name}] declares no AdmissionCriteria — cannot be built.")
+        return self.admission.validate(self.name)
 
     @abstractmethod
     def train_triplets(self) -> Iterator[Triplet]:

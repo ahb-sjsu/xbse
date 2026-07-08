@@ -4,5 +4,6 @@
 - (lebse: legal BSE — refactor the existing ahb-sjsu/lebse in once MoBSE proves the core.)
 """
 from .mobse import MoBSEPairSource, MOBSE_CONFIG
+from .scibse import SciBSEPairSource, SCIBSE_CONFIG
 
-__all__ = ["MoBSEPairSource", "MOBSE_CONFIG"]
+__all__ = ["MoBSEPairSource", "MOBSE_CONFIG", "SciBSEPairSource", "SCIBSE_CONFIG"]

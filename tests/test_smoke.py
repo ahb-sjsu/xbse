@@ -4,7 +4,9 @@ import torch
 import torch.nn.functional as F
 
 from xbse.pairs import PairSource, Triplet, CircularityError
+from xbse.admission import AdmissionCriteria, AdmissionError
 from xbse.objective import info_nce
+from xbse.report import Report, require_pass, NotValidatedError
 
 
 class _Leaky(PairSource):
@@ -32,6 +34,21 @@ def test_circularity_guard_throws():
 
 def test_clean_source_passes():
     _Clean().assert_heldout_disjoint()   # must not raise
+
+
+def test_admission_filter_throws_on_missing_label_source():
+    with pytest.raises(AdmissionError):
+        AdmissionCriteria(invariant_structure="beauty", surface_class="medium",
+                          independent_label_source="").validate("aesbse")
+
+
+def test_require_pass_refuses_fail_report_and_hash_mismatch():
+    ok = Report("x", "abc123", {}, {}, passed=True)
+    require_pass(ok, "abc123")                          # matching PASS -> fine
+    with pytest.raises(NotValidatedError):
+        require_pass(ok, "different")                   # checkpoint hash mismatch
+    with pytest.raises(NotValidatedError):
+        require_pass(Report("x", "abc123", {}, {}, passed=False), "abc123")  # FAIL report
 
 
 def test_info_nce_is_scalar_positive():

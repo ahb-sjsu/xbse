@@ -11,13 +11,17 @@ from torch.optim import AdamW
 
 from .objective import info_nce
 from .validate import gate
+from .report import Report, hash_checkpoint
 
 
 def train(encoder, source, epochs: int = 1, batch_size: int = 32, lr: float = 2e-5,
-          temperature: float = 0.05, max_steps: int | None = None) -> dict:
-    # TEETH first: fail loud if held-out eval leaked into training (rigged test), before we
-    # spend a GPU-hour. Throws CircularityError.
-    source.assert_heldout_disjoint()
+          temperature: float = 0.05, max_steps: int | None = None,
+          checkpoint_path: str | None = None, report_path: str | None = None) -> Report:
+    # TEETH first, before spending a GPU-hour:
+    #   (1) admission filter — a domain without an independent structure label may not be built;
+    #   (2) circularity guard — held-out eval must not leak into training.
+    source.check_admission()               # throws AdmissionError
+    source.assert_heldout_disjoint()       # throws CircularityError
 
     opt = AdamW(encoder.parameters(), lr=lr)
     triplets = list(source.train_triplets())
@@ -41,10 +45,19 @@ def train(encoder, source, epochs: int = 1, batch_size: int = 32, lr: float = 2e
         if max_steps and step >= max_steps:
             break
 
-    # --- MANDATORY validation gate (hard stop lives with the caller) ---
-    report = gate(encoder, source.heldout_eval())
+    # --- MANDATORY validation gate -> signed Report (hard stop lives with the caller) ---
+    if checkpoint_path:
+        torch.save(encoder.state_dict(), checkpoint_path)
+    metrics = gate(encoder, source.heldout_eval())
+    report = Report(
+        instance=source.name,
+        checkpoint_hash=hash_checkpoint(checkpoint_path) if checkpoint_path else "unsaved",
+        thresholds=metrics["thresholds"],
+        metrics={k: metrics[k] for k in ("surface_invariance", "fuzz_ratio", "structure_auroc")},
+        passed=metrics["passed"],
+    )
     print("=== VALIDATION GATE ===")
-    print(json.dumps(report, indent=2))
-    if not report["passed"]:
+    print(report.to_json(report_path))
+    if not report.passed:
         print("\nHARD STOP: gate failed. Do not build downstream tools; iterate the encoder.")
     return report

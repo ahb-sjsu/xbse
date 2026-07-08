@@ -20,6 +20,7 @@ import csv
 from typing import Iterator
 
 from ..pairs import PairSource, Triplet
+from ..admission import AdmissionCriteria
 
 MOBSE_CONFIG = {
     "base_model": "BAAI/bge-m3",
@@ -55,6 +56,11 @@ def _augment(text: str, seed: int) -> str:
 
 class MoBSEPairSource(PairSource):
     name = "mobse"
+    admission = AdmissionCriteria(
+        invariant_structure="moral judgment / valence of a rule-of-thumb",
+        surface_class="paraphrase, wording, framing, language",
+        independent_label_source="Social-Chem-101 human rot-judgment labels (annotated independently of z)",
+    )
 
     def __init__(self, tsv: str | None = None, max_rows: int | None = 60000):
         self.tsv = tsv or MOBSE_CONFIG["social_chem_tsv"]
