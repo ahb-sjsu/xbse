@@ -43,7 +43,8 @@ class CodeBSEPairSource(PairSource):
                     rows.append((str(d.get("task_id", len(rows))), d["text"].strip(), d["code"].strip()))
             else:
                 from datasets import load_dataset             # NRP pods have internet
-                ds = load_dataset(self.hf_dataset, split="train", trust_remote_code=True)
+                # namespaced id + config (newer huggingface_hub rejects bare "mbpp")
+                ds = load_dataset("google-research-datasets/mbpp", "full", split="train")
                 for i, d in enumerate(ds):
                     spec, code = (d.get("text") or "").strip(), (d.get("code") or "").strip()
                     if spec and code:
