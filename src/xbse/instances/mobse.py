@@ -20,14 +20,14 @@ from typing import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet
+from ..pairs import PairSource, Triplet, _norm
 from ..admission import AdmissionCriteria
 
 MOBSE_CONFIG = {
     "base_model": "BAAI/bge-m3",
     "social_chem_tsv":
         "/archive/ethics-corpora/social-chem-101/social-chem-101/social-chem-101.v1.0.tsv",
-    "max_rows": 80000,
+    "max_rows": None,   # full corpus (~292k) — the data lever
 }
 
 
@@ -53,9 +53,10 @@ class MoBSEPairSource(PairSource):
         independent_label_source="Social-Chem-101 human Moral-Foundations + moral-judgment labels",
     )
 
-    def __init__(self, tsv: str | None = None, max_rows: int | None = 80000):
+    def __init__(self, tsv: str | None = None, max_rows: int | None = None, clean: bool = True):
         self.tsv = tsv or MOBSE_CONFIG["social_chem_tsv"]
         self.max_rows = max_rows
+        self.clean = clean   # clean-label: single-foundation + agreement>=3 only (drops the 23% ambiguous)
         self._rows_cache = None
 
     def _rows(self):
@@ -67,20 +68,26 @@ class MoBSEPairSource(PairSource):
                     if self.max_rows and i >= self.max_rows:
                         break
                     rot = (row.get("rot") or "").strip()
-                    found = (row.get("rot-moral-foundations") or "").split("|")[0].strip()
+                    mf = (row.get("rot-moral-foundations") or "").strip()
+                    found = mf.split("|")[0].strip()
                     topic = (row.get("situation-short-id") or "").strip()
-                    legal = (row.get("action-legal") or "").strip() or "na"
-                    if rot and found and topic and rot not in seen:
-                        # richer fingerprint: Foundation x judgment-sign x legality -> more specific
-                        # "same structure", so same-fingerprint items are genuinely more alike (v3)
-                        seen[rot] = ((found, _jsign(row.get("action-moral-judgment")), legal), topic)
-            self._rows_cache = [(r, fp, t) for r, (fp, t) in seen.items()]
+                    try:
+                        agree = int(row.get("rot-agree") or 0)
+                    except (TypeError, ValueError):
+                        agree = 0
+                    if self.clean and ("|" in mf or agree < 3):
+                        continue   # drop ambiguous (multi-foundation) / low-agreement labels
+                    key = _norm(rot)   # dedup by the SAME normalized key the circularity guard uses
+                    if rot and found and topic and key not in seen:
+                        # v2 fingerprint (best): Foundation x judgment-sign. v3's legality added noise.
+                        seen[key] = (rot, (found, _jsign(row.get("action-moral-judgment"))), topic)
+            self._rows_cache = [(rot, fp, t) for (rot, fp, t) in seen.values()]
         return self._rows_cache
 
     def _split(self):
         train, held = [], []
         for r in self._rows():
-            (held if (hash(("mobse", r[0])) % 1000) / 1000.0 < 0.1 else train).append(r)
+            (held if (hash(("mobse", _norm(r[0]))) % 1000) / 1000.0 < 0.1 else train).append(r)
         return train, held
 
     @staticmethod
@@ -91,22 +98,26 @@ class MoBSEPairSource(PairSource):
             by_topic.setdefault(topic, []).append(idx)
         return by_fp, by_topic
 
+    @staticmethod
+    def _sample(pool, rows, field, exclude, rng, tries=12):
+        # rejection-sample an index from pool whose rows[j][field] != exclude (O(tries), not O(pool))
+        for _ in range(tries):
+            j = pool[int(rng.integers(len(pool)))]
+            if rows[j][field] != exclude:
+                return j
+        return None
+
     def train_triplets(self) -> Iterator[Triplet]:
         train, _ = self._split()
         by_fp, by_topic = self._index(train)
         rng = np.random.default_rng(0)
         for i, (rot, fp, topic) in enumerate(train):
-            same_fp_diff_topic = [j for j in by_fp[fp] if train[j][2] != topic]
-            same_topic_diff_fp = [j for j in by_topic[topic] if train[j][1] != fp]
-            if not same_fp_diff_topic:
+            jp = self._sample(by_fp[fp], train, 2, topic, rng)          # same fp, DIFFERENT topic
+            if jp is None:
                 continue
-            pos = train[same_fp_diff_topic[int(rng.integers(len(same_fp_diff_topic)))]][0]
-            if same_topic_diff_fp:                                   # the decorrelation-hard negative
-                neg = train[same_topic_diff_fp[int(rng.integers(len(same_topic_diff_fp)))]][0]
-            else:
-                k = int(rng.integers(len(train)))
-                neg = train[k][0] if train[k][1] != fp else rot
-            yield Triplet(anchor=rot, positive=pos, negative=neg)
+            jn = self._sample(by_topic[topic], train, 1, fp, rng)       # same topic, DIFFERENT fp
+            neg = train[jn][0] if jn is not None else train[int(rng.integers(len(train)))][0]
+            yield Triplet(anchor=rot, positive=train[jp][0], negative=neg)
 
     def heldout_eval(self) -> dict:
         _, held = self._split()
@@ -114,14 +125,12 @@ class MoBSEPairSource(PairSource):
         rng = np.random.default_rng(1)
         structural_pairs, surface_pairs = [], []
         for i, (rot, fp, topic) in enumerate(held):
-            same_fp_diff_topic = [j for j in by_fp[fp] if held[j][2] != topic]
-            same_topic_diff_fp = [j for j in by_topic[topic] if held[j][1] != fp]
-            if not same_fp_diff_topic or not same_topic_diff_fp:
+            jp = self._sample(by_fp[fp], held, 2, topic, rng)
+            jn = self._sample(by_topic[topic], held, 1, fp, rng)
+            if jp is None or jn is None:
                 continue
-            pos = held[same_fp_diff_topic[int(rng.integers(len(same_fp_diff_topic)))]][0]
-            neg = held[same_topic_diff_fp[int(rng.integers(len(same_topic_diff_fp)))]][0]
-            structural_pairs.append((rot, pos, True))    # same fingerprint, different topic -> near
-            structural_pairs.append((rot, neg, False))   # same topic, different fingerprint -> far
+            structural_pairs.append((rot, held[jp][0], True))    # same fingerprint, different topic -> near
+            structural_pairs.append((rot, held[jn][0], False))   # same topic, different fingerprint -> far
             surface_pairs.append((rot, _augment(rot, i)))
             if len(surface_pairs) >= 600:
                 break
