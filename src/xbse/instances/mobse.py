@@ -53,11 +53,15 @@ class MoBSEPairSource(PairSource):
         independent_label_source="Social-Chem-101 human Moral-Foundations + moral-judgment labels",
     )
 
-    def __init__(self, tsv: str | None = None, max_rows: int | None = None, clean: bool = True):
+    def __init__(self, tsv: str | None = None, max_rows: int | None = None, clean: bool = True,
+                 foundation: str | None = None):
         self.tsv = tsv or MOBSE_CONFIG["social_chem_tsv"]
         self.max_rows = max_rows
         self.clean = clean   # clean-label: single-foundation + agreement>=3 only (drops the 23% ambiguous)
+        self.foundation = foundation   # if set: a per-foundation SUB-BSE (test 'MoBSE is too broad')
         self._rows_cache = None
+        if foundation:
+            self.name = "mobse_" + foundation.split("-")[0]
 
     def _rows(self):
         # (rot_text, fingerprint, topic_id); dedup by rot text (v1 leak fix stays)
@@ -77,6 +81,8 @@ class MoBSEPairSource(PairSource):
                         agree = 0
                     if self.clean and ("|" in mf or agree < 3):
                         continue   # drop ambiguous (multi-foundation) / low-agreement labels
+                    if self.foundation and found != self.foundation:
+                        continue   # per-foundation sub-BSE: keep only this foundation's situations
                     key = _norm(rot)   # dedup by the SAME normalized key the circularity guard uses
                     if rot and found and topic and key not in seen:
                         # v2 fingerprint (best): Foundation x judgment-sign. v3's legality added noise.
