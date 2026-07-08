@@ -69,8 +69,11 @@ class MoBSEPairSource(PairSource):
                     rot = (row.get("rot") or "").strip()
                     found = (row.get("rot-moral-foundations") or "").split("|")[0].strip()
                     topic = (row.get("situation-short-id") or "").strip()
+                    legal = (row.get("action-legal") or "").strip() or "na"
                     if rot and found and topic and rot not in seen:
-                        seen[rot] = ((found, _jsign(row.get("action-moral-judgment"))), topic)
+                        # richer fingerprint: Foundation x judgment-sign x legality -> more specific
+                        # "same structure", so same-fingerprint items are genuinely more alike (v3)
+                        seen[rot] = ((found, _jsign(row.get("action-moral-judgment")), legal), topic)
             self._rows_cache = [(r, fp, t) for r, (fp, t) in seen.items()]
         return self._rows_cache
 
