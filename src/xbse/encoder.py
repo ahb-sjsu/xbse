@@ -22,7 +22,12 @@ class BSEEncoder(nn.Module):
         super().__init__()
         from transformers import AutoModel, AutoTokenizer
         self.tok = AutoTokenizer.from_pretrained(base_model)
-        self.backbone = AutoModel.from_pretrained(base_model)
+        # force safetensors: avoids transformers' torch.load vulnerability gate (needs torch>=2.6
+        # for .bin) — BGE-M3 ships safetensors, so this loads cleanly on torch 2.4 (NRP image).
+        try:
+            self.backbone = AutoModel.from_pretrained(base_model, use_safetensors=True)
+        except Exception:
+            self.backbone = AutoModel.from_pretrained(base_model)
         hidden = self.backbone.config.hidden_size
         self.proj = nn.Identity() if proj_dim in (None, hidden) else nn.Linear(hidden, proj_dim)
         self.max_len = max_len

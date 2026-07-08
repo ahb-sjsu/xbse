@@ -78,25 +78,28 @@ class MoBSEPairSource(PairSource):
                 if rot and val is not None:
                     yield rot, val, split
 
+    def _split(self):
+        # Split by UNIQUE rule-of-thumb TEXT, not the dataset's row-split: the same rot recurs
+        # across Social-Chem's train/dev/test rows, so a row-split leaks text (the circularity
+        # guard caught this). Hash-splitting the deduped text guarantees train/held disjointness.
+        seen = {}
+        for rot, val, _split in self._rows():
+            seen.setdefault(rot, val)
+        train_pos, train_neg, held_pos, held_neg = [], [], [], []
+        for rot, val in seen.items():
+            held = (hash(("mobse", rot)) % 1000) / 1000.0 < 0.1
+            (( held_pos if held else train_pos) if val > 0 else (held_neg if held else train_neg)).append(rot)
+        return (train_pos, train_neg), (held_pos, held_neg)
+
     def train_triplets(self) -> Iterator[Triplet]:
-        pos, neg = [], []
-        for rot, val, split in self._rows():
-            if split != "train":
-                continue
-            (pos if val > 0 else neg).append(rot)
+        (pos, neg), _ = self._split()
         n = min(len(pos), len(neg))
         for k in range(n):
-            # anchor from one valence, negative from the opposite; positive = anchor paraphrase
-            anchor = pos[k]
-            yield Triplet(anchor=anchor, positive=_augment(anchor, k), negative=neg[k])
+            yield Triplet(anchor=pos[k], positive=_augment(pos[k], k), negative=neg[k])
             yield Triplet(anchor=neg[k], positive=_augment(neg[k], k + 1), negative=pos[k])
 
     def heldout_eval(self) -> dict:
-        pos, neg = [], []
-        for rot, val, split in self._rows():
-            if split not in ("dev", "test"):
-                continue
-            (pos if val > 0 else neg).append(rot)
+        _, (pos, neg) = self._split()
         m = min(len(pos), len(neg), 500)
         structural_pairs = []
         for k in range(m - 1):
