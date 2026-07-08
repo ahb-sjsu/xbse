@@ -1,113 +1,125 @@
-"""MoBSE — the morality *-BSE instance. First instance; proves the core.
+"""MoBSE v2 — morality *-BSE keyed on the moral FINGERPRINT, topic-decorrelated.
 
-invariance axis  -> positives = same rule-of-thumb, surface-perturbed  (wording must not move z)
-sensitivity axis -> negatives = OPPOSITE moral judgment                (valence must move z)
+v1 failed (AUROC 0.571) because it keyed on valence — 1 bit, dominated by topic. v2 uses
+Social-Chem-101's human labels directly: the structure is the moral FINGERPRINT
+(Moral Foundation x judgment sign), which is theory-grounded and spans topics.
 
-Primary source: Social-Chem-101 (292K rules-of-thumb with moral-judgment labels + a native
-train/dev/test split). Scruples (dilemma verdicts) and Moral-Machine (parametric preferences)
-plug in as additional PairSources the same way.
+The whole game is TOPIC-DECORRELATION, so pairs are built to force it:
+  positive = same fingerprint, DIFFERENT situation (topic)  -> near   (can't cheat via topic)
+  negative = different fingerprint, SAME situation (topic)   -> far    (the decorrelation control)
+If MoBSE clears the gate on THIS eval, it tracks moral structure, not topic — which is the
+only version useful to the system. Label source: Social-Chem human annotation (independent of z).
 
-CIRCULARITY GUARD: the parametric legal thresholds and the Moral-Machine test split used for
-downstream discontinuity testing are held out and never appear here. Train for invariance +
-generic moral valence; test stratification on boundaries the encoder never saw.
-
-Production TODO: replace the toy surface-augmenter with back-translation / LLM paraphrase, and
-merge Scruples + Moral-Machine(train) triplets. This file is the scaffold that makes the gate
-runnable, not the final data recipe.
+Honest note: the fingerprint is coarser than SciBSE/CodeBSE's identity labels and moral labels
+carry annotator disagreement (that's why `rot-agree` exists), so the AUROC bar may be genuinely
+harder to hit here — a sub-bar-but-decorrelated result is itself a finding about moral structure.
 """
 from __future__ import annotations
 import csv
 from typing import Iterator
+
+import numpy as np
 
 from ..pairs import PairSource, Triplet
 from ..admission import AdmissionCriteria
 
 MOBSE_CONFIG = {
     "base_model": "BAAI/bge-m3",
-    "proj_dim": None,                 # keep native 1024-d unless the gate motivates a bottleneck
-    "temperature": 0.05,
-    "adversary": None,                # optionally strip language/register later
     "social_chem_tsv":
         "/archive/ethics-corpora/social-chem-101/social-chem-101/social-chem-101.v1.0.tsv",
+    "max_rows": 80000,
 }
-
-# rot-judgment strings -> coarse moral valence (the sensitivity label)
-_POS = ("good", "ok", "okay", "expected", "fine", "nice", "polite", "kind")
-_NEG = ("bad", "wrong", "rude", "shouldn't", "should not", "not ok", "mean", "cruel")
-
-
-def _valence(judgment: str) -> int | None:
-    j = (judgment or "").lower()
-    if any(w in j for w in _NEG):
-        return -1
-    if any(w in j for w in _POS):
-        return 1
-    return None
 
 
 def _augment(text: str, seed: int) -> str:
-    """Toy surface perturbation (invariance positive). Deterministic, content-preserving.
-    Replace with back-translation / LLM paraphrase for the real run."""
     prefixes = ["", "It is the case that ", "Generally, ", "As a rule, ", "In most cases, "]
     p = prefixes[seed % len(prefixes)]
-    t = text[0].lower() + text[1:] if p and text else text
-    return p + t
+    return (p + (text[0].lower() + text[1:] if p and text else text))
+
+
+def _jsign(v: str) -> str:
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return "0"
+    return "+" if f > 0 else ("-" if f < 0 else "0")
 
 
 class MoBSEPairSource(PairSource):
     name = "mobse"
     admission = AdmissionCriteria(
-        invariant_structure="moral judgment / valence of a rule-of-thumb",
-        surface_class="paraphrase, wording, framing, language",
-        independent_label_source="Social-Chem-101 human rot-judgment labels (annotated independently of z)",
+        invariant_structure="moral fingerprint = Moral Foundation x judgment sign",
+        surface_class="wording, framing, topic (situation)",
+        independent_label_source="Social-Chem-101 human Moral-Foundations + moral-judgment labels",
     )
 
-    def __init__(self, tsv: str | None = None, max_rows: int | None = 60000):
+    def __init__(self, tsv: str | None = None, max_rows: int | None = 80000):
         self.tsv = tsv or MOBSE_CONFIG["social_chem_tsv"]
         self.max_rows = max_rows
+        self._rows_cache = None
 
     def _rows(self):
-        with open(self.tsv, newline="", encoding="utf-8", errors="replace") as f:
-            r = csv.DictReader(f, delimiter="\t")
-            for i, row in enumerate(r):
-                if self.max_rows and i >= self.max_rows:
-                    break
-                rot = (row.get("rot") or "").strip()
-                val = _valence(row.get("rot-judgment", ""))
-                split = (row.get("split") or "train").strip()
-                if rot and val is not None:
-                    yield rot, val, split
+        # (rot_text, fingerprint, topic_id); dedup by rot text (v1 leak fix stays)
+        if self._rows_cache is None:
+            seen = {}
+            with open(self.tsv, newline="", encoding="utf-8", errors="replace") as f:
+                for i, row in enumerate(csv.DictReader(f, delimiter="\t")):
+                    if self.max_rows and i >= self.max_rows:
+                        break
+                    rot = (row.get("rot") or "").strip()
+                    found = (row.get("rot-moral-foundations") or "").split("|")[0].strip()
+                    topic = (row.get("situation-short-id") or "").strip()
+                    if rot and found and topic and rot not in seen:
+                        seen[rot] = ((found, _jsign(row.get("action-moral-judgment"))), topic)
+            self._rows_cache = [(r, fp, t) for r, (fp, t) in seen.items()]
+        return self._rows_cache
 
     def _split(self):
-        # Split by UNIQUE rule-of-thumb TEXT, not the dataset's row-split: the same rot recurs
-        # across Social-Chem's train/dev/test rows, so a row-split leaks text (the circularity
-        # guard caught this). Hash-splitting the deduped text guarantees train/held disjointness.
-        seen = {}
-        for rot, val, _split in self._rows():
-            seen.setdefault(rot, val)
-        train_pos, train_neg, held_pos, held_neg = [], [], [], []
-        for rot, val in seen.items():
-            held = (hash(("mobse", rot)) % 1000) / 1000.0 < 0.1
-            (( held_pos if held else train_pos) if val > 0 else (held_neg if held else train_neg)).append(rot)
-        return (train_pos, train_neg), (held_pos, held_neg)
+        train, held = [], []
+        for r in self._rows():
+            (held if (hash(("mobse", r[0])) % 1000) / 1000.0 < 0.1 else train).append(r)
+        return train, held
+
+    @staticmethod
+    def _index(rows):
+        by_fp, by_topic = {}, {}
+        for idx, (_rot, fp, topic) in enumerate(rows):
+            by_fp.setdefault(fp, []).append(idx)
+            by_topic.setdefault(topic, []).append(idx)
+        return by_fp, by_topic
 
     def train_triplets(self) -> Iterator[Triplet]:
-        (pos, neg), _ = self._split()
-        n = min(len(pos), len(neg))
-        for k in range(n):
-            yield Triplet(anchor=pos[k], positive=_augment(pos[k], k), negative=neg[k])
-            yield Triplet(anchor=neg[k], positive=_augment(neg[k], k + 1), negative=pos[k])
+        train, _ = self._split()
+        by_fp, by_topic = self._index(train)
+        rng = np.random.default_rng(0)
+        for i, (rot, fp, topic) in enumerate(train):
+            same_fp_diff_topic = [j for j in by_fp[fp] if train[j][2] != topic]
+            same_topic_diff_fp = [j for j in by_topic[topic] if train[j][1] != fp]
+            if not same_fp_diff_topic:
+                continue
+            pos = train[same_fp_diff_topic[int(rng.integers(len(same_fp_diff_topic)))]][0]
+            if same_topic_diff_fp:                                   # the decorrelation-hard negative
+                neg = train[same_topic_diff_fp[int(rng.integers(len(same_topic_diff_fp)))]][0]
+            else:
+                k = int(rng.integers(len(train)))
+                neg = train[k][0] if train[k][1] != fp else rot
+            yield Triplet(anchor=rot, positive=pos, negative=neg)
 
     def heldout_eval(self) -> dict:
-        _, (pos, neg) = self._split()
-        m = min(len(pos), len(neg), 500)
-        structural_pairs = []
-        for k in range(m - 1):
-            structural_pairs.append((pos[k], pos[k + 1], True))     # same valence -> near
-            structural_pairs.append((pos[k], neg[k], False))        # opposite valence -> far
-        surface_pairs = [(pos[k], _augment(pos[k], k)) for k in range(m)]
-        return {
-            "structural_pairs": structural_pairs,
-            "surface_pairs": surface_pairs,
-            "ood_texts": [],   # fill with a non-moral corpus sample (e.g. arxiv) for the OOD control
-        }
+        _, held = self._split()
+        by_fp, by_topic = self._index(held)
+        rng = np.random.default_rng(1)
+        structural_pairs, surface_pairs = [], []
+        for i, (rot, fp, topic) in enumerate(held):
+            same_fp_diff_topic = [j for j in by_fp[fp] if held[j][2] != topic]
+            same_topic_diff_fp = [j for j in by_topic[topic] if held[j][1] != fp]
+            if not same_fp_diff_topic or not same_topic_diff_fp:
+                continue
+            pos = held[same_fp_diff_topic[int(rng.integers(len(same_fp_diff_topic)))]][0]
+            neg = held[same_topic_diff_fp[int(rng.integers(len(same_topic_diff_fp)))]][0]
+            structural_pairs.append((rot, pos, True))    # same fingerprint, different topic -> near
+            structural_pairs.append((rot, neg, False))   # same topic, different fingerprint -> far
+            surface_pairs.append((rot, _augment(rot, i)))
+            if len(surface_pairs) >= 600:
+                break
+        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
