@@ -5,5 +5,8 @@
 """
 from .mobse import MoBSEPairSource, MOBSE_CONFIG
 from .scibse import SciBSEPairSource, SCIBSE_CONFIG
+from .reabse import ReaBSEPairSource, REABSE_CONFIG
+from .codebse import CodeBSEPairSource, CODEBSE_CONFIG
 
-__all__ = ["MoBSEPairSource", "MOBSE_CONFIG", "SciBSEPairSource", "SCIBSE_CONFIG"]
+__all__ = ["MoBSEPairSource", "MOBSE_CONFIG", "SciBSEPairSource", "SCIBSE_CONFIG",
+           "ReaBSEPairSource", "REABSE_CONFIG", "CodeBSEPairSource", "CODEBSE_CONFIG"]
