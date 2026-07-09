@@ -13,6 +13,7 @@ from .mostories import MoralStoriesBSEPairSource, MOSTORIES_CONFIG
 from .physharm import PhysHarmBSEPairSource, PHYSHARM_CONFIG
 from .epistemic import EpistemicBSEPairSource, EPISTEMIC_CONFIG
 from .socenv import SocEnvBSEPairSource, SOCENV_CONFIG
+from .mentalmanip import AutonomyBSEPairSource, MENTALMANIP_CONFIG
 
 __all__ = ["MoBSEPairSource", "MOBSE_CONFIG", "SciBSEPairSource", "SCIBSE_CONFIG",
            "ReaBSEPairSource", "REABSE_CONFIG", "CodeBSEPairSource", "CODEBSE_CONFIG",
@@ -20,4 +21,5 @@ __all__ = ["MoBSEPairSource", "MOBSE_CONFIG", "SciBSEPairSource", "SCIBSE_CONFIG
            "MoralStoriesBSEPairSource", "MOSTORIES_CONFIG",
            "PhysHarmBSEPairSource", "PHYSHARM_CONFIG",
            "EpistemicBSEPairSource", "EPISTEMIC_CONFIG",
-           "SocEnvBSEPairSource", "SOCENV_CONFIG"]
+           "SocEnvBSEPairSource", "SOCENV_CONFIG",
+           "AutonomyBSEPairSource", "MENTALMANIP_CONFIG"]
