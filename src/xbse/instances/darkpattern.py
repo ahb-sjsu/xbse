@@ -15,7 +15,7 @@ from typing import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac
+from ..pairs import PairSource, Triplet, stable_frac, _norm
 from ..admission import AdmissionCriteria
 
 DARKPATTERN_CONFIG = {
@@ -45,13 +45,14 @@ class AutonomyDarkBSEPairSource(PairSource):
             with open(self.tsv, newline="", encoding="utf-8", errors="replace") as f:
                 for row in csv.DictReader(f, delimiter="\t"):
                     text = (row.get("text") or "").strip().replace("\n", " ")
-                    if len(text) < 10 or text in seen:
+                    key = _norm(text)   # dedup by normalized form (dark-pattern text is short/repetitive)
+                    if len(text) < 10 or key in seen:
                         continue
                     try:
                         lab = int(row.get("label"))
                     except (TypeError, ValueError):
                         continue
-                    seen.add(text)
+                    seen.add(key)
                     topic = (row.get("Pattern Category") or "none").strip() or "none"
                     rows.append((topic, text[:400], lab))
             self._rows_cache = rows
