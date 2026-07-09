@@ -11,11 +11,15 @@ and **every instance is validated by the same gate.**
 |---|---|---|---|
 | LaBSE | BERT dual-encoder | language (translation pairs) | meaning |
 | LeBSE | BERT dual-encoder | surface / citation form | legal holding |
-| **MoBSE** | BGE-M3 dual-encoder | wording / framing / Hohfeld gauge | moral judgment / structure |
+| **MoBSE** (per-foundation) | BGE-M3 dual-encoder | wording / framing / topic | moral judgment (one MoralVector dim) |
+| **RightsBSE** | BGE-M3 dual-encoder | case wording / facts / jurisdiction | ECHR Convention article (rights_respect) |
+| **MoralStoriesBSE** | BGE-M3 dual-encoder | situation framing | moral vs immoral action (matched hard negatives) |
 
 Only the **PairSource** (invariance→positives, sensitivity→negatives), an optional **adversary**
 (strip a named nuisance), and the **validation labels** differ. The encoder, the contrastive
-objective, and the validation harness are written once.
+objective, and the validation harness are written once. **Each moral `*-BSE` is the encoder for one
+DEME MoralVector dimension** — the dimension↔feeder map lives in
+`erisml-lib/docs/moralvector_reference.md`.
 
 ## Architecture
 
@@ -27,9 +31,14 @@ xbse/
   adversary.py   optional gradient-reversal head to strip a nuisance variable       (shared)
   validate.py    THE GATE: structure-vs-surface AUROC + fuzz ratio + OOD control    (shared)
   train.py       training loop wiring the above                                     (shared)
-  instances/
-    mobse.py     PairSource + config: positives = same-judgment+paraphrase,         (per-domain)
-                 negatives = opposite-judgment  (Social-Chem-101 / Scruples / Moral-Machine)
+  instances/     one PairSource + config per domain (moral ones feed a MoralVector dim):
+    mobse.py       per-foundation moral sub-BSEs (Social-Chem-101; foundation=care/fairness/…)
+    rights.py      RightsBSE — ECHR Convention article  → rights_respect
+    mostories.py   MoralStoriesBSE — matched moral/immoral action hard negatives (cross-cutting)
+    scibse.py reabse.py codebse.py gabse.py   non-moral cousins (science / ARC / code / recipes)
+  experiments/
+    rank_test.py             empirical moral-dimension rank test (bifactor result)
+    risk_coverage_report.md  encoder validation + selective-prediction curves
 ```
 
 ## The non-negotiable discipline (read before adding code)
