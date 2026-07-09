@@ -8,6 +8,7 @@ for downstream discontinuity testing must NOT appear in training positives/negat
 test is rigged. See docs/MOBSE_PLAN.md.
 """
 from __future__ import annotations
+import hashlib
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -29,6 +30,16 @@ class CircularityError(RuntimeError):
 
 def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", (text or "").strip().lower())
+
+
+def stable_frac(key: str) -> float:
+    """Deterministic [0,1) bucket for the train/held split.
+
+    Python's built-in hash() is salted per process (PYTHONHASHSEED), so a hash()-based
+    split silently drew a DIFFERENT held-out set on every run — making AUROC numbers
+    incomparable across runs (and, on an unlucky salt, degenerate). This md5-based bucket
+    is stable across processes and machines, so @350 vs @2500 see the SAME held set."""
+    return (int(hashlib.md5(key.encode("utf-8")).hexdigest()[:8], 16) % 1000) / 1000.0
 
 
 class PairSource(ABC):

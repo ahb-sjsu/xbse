@@ -19,7 +19,7 @@ from typing import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet
+from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
 
 REABSE_CONFIG = {"base_model": "BAAI/bge-m3", "holdout_frac": 0.1}
@@ -80,7 +80,7 @@ class ReaBSEPairSource(PairSource):
     def _split(self):
         train, held = [], []
         for tid, tr in self._load():
-            b = (hash((self.name, tid)) % 1000) / 1000.0
+            b = stable_frac(self.name + "|" + str(tid))
             (held if b < self.holdout_frac else train).append((tid, tr))
         return train, held
 

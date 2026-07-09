@@ -20,7 +20,7 @@ from typing import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, _norm
+from ..pairs import PairSource, Triplet, _norm, stable_frac
 from ..admission import AdmissionCriteria
 
 MOBSE_CONFIG = {
@@ -93,7 +93,7 @@ class MoBSEPairSource(PairSource):
     def _split(self):
         train, held = [], []
         for r in self._rows():
-            (held if (hash(("mobse", _norm(r[0]))) % 1000) / 1000.0 < 0.1 else train).append(r)
+            (held if stable_frac("mobse|" + _norm(r[0])) < 0.1 else train).append(r)
         return train, held
 
     @staticmethod

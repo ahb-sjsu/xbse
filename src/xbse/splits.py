@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from typing import Hashable, Iterable
 
-from .pairs import CircularityError
+from .pairs import CircularityError, stable_frac
 
 
 def _norm(text: str) -> str:
@@ -16,11 +16,14 @@ def _norm(text: str) -> str:
 
 
 def split_by_key(items: Iterable, key_fn, holdout_frac: float = 0.1, seed: int = 0):
-    """Deterministic split by hashing a stable key -> (train, heldout). No RNG state, resumable."""
+    """Deterministic split by hashing a stable key -> (train, heldout). No RNG state, resumable.
+
+    Uses stable_frac (md5), NOT Python's salted hash() — otherwise the split silently varied
+    per process and the 'deterministic/resumable' promise was false."""
     train, heldout = [], []
     for it in items:
         k = str(key_fn(it))
-        bucket = (hash((seed, k)) % 1000) / 1000.0
+        bucket = stable_frac(f"{seed}|{k}")
         (heldout if bucket < holdout_frac else train).append(it)
     return train, heldout
 

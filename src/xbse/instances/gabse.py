@@ -17,7 +17,7 @@ Data: pulled from HF in-pod (NRP/Atlas have internet), like CodeBSE's MBPP.
 from __future__ import annotations
 from typing import Iterator
 
-from ..pairs import PairSource, Triplet
+from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
 
 GABSE_CONFIG = {"base_model": "BAAI/bge-m3", "holdout_frac": 0.1, "max_recipes": 40000}
@@ -82,7 +82,7 @@ class GaBSEPairSource(PairSource):
     def _split(self):
         train, held = [], []
         for r in self._rows():
-            (held if (hash((self.name, r[0])) % 1000) / 1000.0 < self.holdout_frac else train).append(r)
+            (held if stable_frac(self.name + "|" + str(r[0])) < self.holdout_frac else train).append(r)
         return train, held
 
     def train_triplets(self) -> Iterator[Triplet]:

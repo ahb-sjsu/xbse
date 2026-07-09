@@ -14,7 +14,7 @@ Data: arxiv_papers on Atlas (680K rows, title+abstract+categories). Split by arx
 from __future__ import annotations
 from typing import Iterator
 
-from ..pairs import PairSource, Triplet
+from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
 
 SCIBSE_CONFIG = {"base_model": "BAAI/bge-m3", "max_papers": 50000, "holdout_frac": 0.1}
@@ -49,7 +49,7 @@ class SciBSEPairSource(PairSource):
     def _split(self):
         train, held = [], []
         for r in self._rows():
-            b = (hash((self.name, r[0])) % 1000) / 1000.0
+            b = stable_frac(self.name + "|" + str(r[0]))
             (held if b < self.holdout_frac else train).append(r)
         return train, held
 

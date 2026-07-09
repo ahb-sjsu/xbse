@@ -17,7 +17,7 @@ from typing import Iterator
 import ast
 import random
 
-from ..pairs import PairSource, Triplet
+from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
 
 CODEBSE_CONFIG = {"base_model": "BAAI/bge-m3", "holdout_frac": 0.1, "hf_dataset": "mbpp"}
@@ -95,7 +95,7 @@ class CodeBSEPairSource(PairSource):
     def _split(self):
         train, held = [], []
         for r in self._load():
-            b = (hash((self.name, r[0])) % 1000) / 1000.0
+            b = stable_frac(self.name + "|" + str(r[0]))
             (held if b < self.holdout_frac else train).append(r)
         return train, held
 
