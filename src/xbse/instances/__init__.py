@@ -15,6 +15,7 @@ from .epistemic import EpistemicBSEPairSource, EPISTEMIC_CONFIG
 from .socenv import SocEnvBSEPairSource, SOCENV_CONFIG
 from .mentalmanip import AutonomyBSEPairSource, MENTALMANIP_CONFIG
 from .privacybse import PrivacyBSEPairSource, PRIVACY_CONFIG
+from .darkpattern import AutonomyDarkBSEPairSource, DARKPATTERN_CONFIG
 
 __all__ = ["MoBSEPairSource", "MOBSE_CONFIG", "SciBSEPairSource", "SCIBSE_CONFIG",
            "ReaBSEPairSource", "REABSE_CONFIG", "CodeBSEPairSource", "CODEBSE_CONFIG",
@@ -24,4 +25,5 @@ __all__ = ["MoBSEPairSource", "MOBSE_CONFIG", "SciBSEPairSource", "SCIBSE_CONFIG
            "EpistemicBSEPairSource", "EPISTEMIC_CONFIG",
            "SocEnvBSEPairSource", "SOCENV_CONFIG",
            "AutonomyBSEPairSource", "MENTALMANIP_CONFIG",
-           "PrivacyBSEPairSource", "PRIVACY_CONFIG"]
+           "PrivacyBSEPairSource", "PRIVACY_CONFIG",
+           "AutonomyDarkBSEPairSource", "DARKPATTERN_CONFIG"]
