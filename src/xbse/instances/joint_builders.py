@@ -6,7 +6,9 @@ so that a cross-dataset positive (same sign, different corpus) is a genuine same
 The mechanism (splitting, cross-corpus triplets, domain-adversarial labels, cross-domain gate)
 all lives in JointPairSource.
 """
+
 from __future__ import annotations
+
 import csv
 import json
 
@@ -15,7 +17,7 @@ from .joint import JointPairSource
 DEAD_BAND = 0.05
 
 # ----------------------------------------------------------------------------- privacy
-PRIVACY_ROT = "/archive/ethics-corpora/privacy/privacy_labeled.jsonl"      # prescriptive RoTs
+PRIVACY_ROT = "/archive/ethics-corpora/privacy/privacy_labeled.jsonl"  # prescriptive RoTs
 PRIVACY_AITA = "/archive/ethics-corpora/privacy/aita_privacy_labeled.jsonl"  # lived scenarios
 
 
@@ -51,18 +53,76 @@ ETHICS_CS = "/archive/ethics-corpora/ethics/commonsense.jsonl"
 
 # (rot-category substring in Social-Chem, keyword set for ETHICS commonsense)
 FOUNDATIONS = {
-    "care":       ("care-harm",
-                   ("hurt", "harm", "help", "protect", "care", "cruel", "abuse", "comfort",
-                    "suffer", "kind", "neglect", "rescue", "hit", "attack")),
-    "fairness":   ("fairness-cheating",
-                   ("fair", "unfair", "cheat", "steal", "deserve", "equal", "discriminat",
-                    "share", "owe", "betray", "honest deal", "scam", "fraud")),
-    "legitimacy": ("authority-subversion",
-                   ("obey", "rule", "law", "permission", "authority", "boss", "illegal",
-                    "allowed", "disobey", "respect", "order", "duty", "supposed to")),
-    "epistemic":  (None,   # honesty is keyword-filtered in Social-Chem too (no MFT category)
-                   ("lie", "lying", "lied", "honest", "dishonest", "truth", "truthful",
-                    "deceive", "deceiv", "mislead")),
+    "care": (
+        "care-harm",
+        (
+            "hurt",
+            "harm",
+            "help",
+            "protect",
+            "care",
+            "cruel",
+            "abuse",
+            "comfort",
+            "suffer",
+            "kind",
+            "neglect",
+            "rescue",
+            "hit",
+            "attack",
+        ),
+    ),
+    "fairness": (
+        "fairness-cheating",
+        (
+            "fair",
+            "unfair",
+            "cheat",
+            "steal",
+            "deserve",
+            "equal",
+            "discriminat",
+            "share",
+            "owe",
+            "betray",
+            "honest deal",
+            "scam",
+            "fraud",
+        ),
+    ),
+    "legitimacy": (
+        "authority-subversion",
+        (
+            "obey",
+            "rule",
+            "law",
+            "permission",
+            "authority",
+            "boss",
+            "illegal",
+            "allowed",
+            "disobey",
+            "respect",
+            "order",
+            "duty",
+            "supposed to",
+        ),
+    ),
+    "epistemic": (
+        None,  # honesty is keyword-filtered in Social-Chem too (no MFT category)
+        (
+            "lie",
+            "lying",
+            "lied",
+            "honest",
+            "dishonest",
+            "truth",
+            "truthful",
+            "deceive",
+            "deceiv",
+            "mislead",
+        ),
+    ),
 }
 _EPI_KW = FOUNDATIONS["epistemic"][1]
 
@@ -120,8 +180,10 @@ def build_foundation_joint(name: str, holdout_frac: float = 0.1) -> JointPairSou
     category, keywords = FOUNDATIONS[name]
     return JointPairSource(
         name=f"{name}_joint",
-        domains=[("socialchem", _social_chem_rows(category, keywords)),
-                 ("ethics", _ethics_rows(keywords))],
+        domains=[
+            ("socialchem", _social_chem_rows(category, keywords)),
+            ("ethics", _ethics_rows(keywords)),
+        ],
         holdout_frac=holdout_frac,
         invariant_structure=f"{name} valence (upheld vs violated), shared across RoTs and scenarios",
         label_source="Social-Chem action-moral-judgment sign + ETHICS commonsense label",
@@ -131,9 +193,30 @@ def build_foundation_joint(name: str, holdout_frac: float = 0.1) -> JointPairSou
 # --------------------------------------------------------------- physical_harm & autonomy
 # Both reuse existing single-corpus loaders (BeaverTails / MentalManip are already HF-cached on
 # Atlas; darkpattern reads a local tsv). Convention: violation label 1 -> '-', upheld 0 -> '+'.
-HARM_KW = ("hurt", "harm", "kill", "hit", "attack", "injure", "wound", "stab", "punch",
-           "violence", "violent", "abuse", "assault", "poison", "choke", "beat", "weapon",
-           "shoot", "strangle", "murder", "kick", "slap")
+HARM_KW = (
+    "hurt",
+    "harm",
+    "kill",
+    "hit",
+    "attack",
+    "injure",
+    "wound",
+    "stab",
+    "punch",
+    "violence",
+    "violent",
+    "abuse",
+    "assault",
+    "poison",
+    "choke",
+    "beat",
+    "weapon",
+    "shoot",
+    "strangle",
+    "murder",
+    "kick",
+    "slap",
+)
 
 
 def _binary_neg_rows(loader_rows):
@@ -143,8 +226,9 @@ def _binary_neg_rows(loader_rows):
 
 def build_physharm_joint(holdout_frac: float = 0.1) -> JointPairSource:
     from .physharm import PhysHarmBSEPairSource
-    bt = _binary_neg_rows(PhysHarmBSEPairSource()._rows())        # BeaverTails physical-harm vs safe
-    eth = _ethics_rows(HARM_KW)                                   # ETHICS harm-keyword scenarios
+
+    bt = _binary_neg_rows(PhysHarmBSEPairSource()._rows())  # BeaverTails physical-harm vs safe
+    eth = _ethics_rows(HARM_KW)  # ETHICS harm-keyword scenarios
     return JointPairSource(
         name="physharm_joint",
         domains=[("beavertails", bt), ("ethics", eth)],
@@ -157,8 +241,9 @@ def build_physharm_joint(holdout_frac: float = 0.1) -> JointPairSource:
 def build_autonomy_joint(holdout_frac: float = 0.1) -> JointPairSource:
     from .darkpattern import AutonomyDarkBSEPairSource
     from .mentalmanip import AutonomyBSEPairSource
-    dp = _binary_neg_rows(AutonomyDarkBSEPairSource()._rows())    # dark-pattern UI text
-    mm = _binary_neg_rows(AutonomyBSEPairSource()._rows())        # MentalManip dialogue
+
+    dp = _binary_neg_rows(AutonomyDarkBSEPairSource()._rows())  # dark-pattern UI text
+    mm = _binary_neg_rows(AutonomyBSEPairSource()._rows())  # MentalManip dialogue
     return JointPairSource(
         name="autonomy_joint",
         domains=[("darkpattern", dp), ("mentalmanip", mm)],
@@ -168,8 +253,84 @@ def build_autonomy_joint(holdout_frac: float = 0.1) -> JointPairSource:
     )
 
 
+# --------------------------------------------------------------- environmental
+ENV_LABELED = "/archive/ethics-corpora/environmental/env_labeled.jsonl"  # dual-judge {text, env}
+
+
+def _climate_sentiment_rows():
+    # ClimateBERT climate_sentiment: 0=opportunity(+), 1=neutral(drop), 2=risk(-)
+    from datasets import load_dataset
+
+    rows = []
+    ds = load_dataset("climatebert/climate_sentiment")
+    for sp in ds:
+        for r in ds[sp]:
+            lab = int(r["label"])
+            sign = "+" if lab == 0 else ("-" if lab == 2 else "0")
+            t = (r.get("text") or "").strip()
+            if sign != "0" and len(t) >= 25:
+                rows.append((t, sign))
+    return rows
+
+
+def build_environmental_joint(holdout_frac: float = 0.12) -> JointPairSource:
+    return JointPairSource(
+        name="environmental_joint",
+        domains=[
+            ("climate_sentiment", _climate_sentiment_rows()),
+            ("env_claims", _signed_jsonl(ENV_LABELED, field="env")),
+        ],
+        holdout_frac=holdout_frac,
+        invariant_structure="environmental-impact valence (harmed vs protected), across disclosures and claims",
+        label_source="ClimateBERT risk/opportunity + dual-judge (qwen3+glm-5) env-impact valence",
+    )
+
+
+# --------------------------------------------------------------- rights_respect
+def _echr_rows():
+    # ECHR (LexGLUE ecthr_a): facts + allegedly-violated article labels -> violation '-', none '+'
+    from datasets import load_dataset
+
+    ds = load_dataset("coastalcph/lex_glue", "ecthr_a")
+    rows = []
+    for sp in ("train", "validation"):
+        for r in ds[sp]:
+            t = r["text"]
+            txt = (" ".join(t) if isinstance(t, list) else str(t)).strip()[:800]
+            sign = "-" if len(r["labels"]) > 0 else "+"
+            if len(txt) >= 25:
+                rows.append((txt, sign))
+    return rows
+
+
+def _ethics_justice_rows():
+    # ETHICS justice: just/reasonable(1) -> '+', unjust(0) -> '-'
+    from datasets import load_dataset
+
+    ds = load_dataset("hendrycks/ethics", "justice")
+    rows = []
+    for sp in ds:
+        for r in ds[sp]:
+            s = (r.get("scenario") or "").strip()
+            if len(s) >= 15:
+                rows.append((s, "+" if int(r["label"]) == 1 else "-"))
+    return rows
+
+
+def build_rights_joint(holdout_frac: float = 0.12) -> JointPairSource:
+    return JointPairSource(
+        name="rights_joint",
+        domains=[("echr", _echr_rows()), ("ethics_justice", _ethics_justice_rows())],
+        holdout_frac=holdout_frac,
+        invariant_structure="rights / just-treatment valence (violated vs respected), across ECHR cases and justice scenarios",
+        label_source="ECHR article-violation labels + ETHICS justice reasonableness",
+    )
+
+
 BUILDERS = {
     "privacy_joint": build_privacy_joint,
+    "environmental_joint": build_environmental_joint,
+    "rights_joint": build_rights_joint,
     "care_joint": lambda **k: build_foundation_joint("care", **k),
     "fairness_joint": lambda **k: build_foundation_joint("fairness", **k),
     "legitimacy_joint": lambda **k: build_foundation_joint("legitimacy", **k),

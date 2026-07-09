@@ -4,7 +4,9 @@ LaBSE-style instances may want the embedding to carry no information about a nui
 time-period, surface register). Attach a classifier that predicts the nuisance through a gradient
 reversal layer; the encoder is trained to make it fail. Purely optional per instance.
 """
+
 from __future__ import annotations
+
 import torch
 import torch.nn as nn
 from torch.autograd import Function

@@ -13,14 +13,16 @@ invariance  -> positives = same valence sign, different bucket
 sensitivity -> negatives = opposite valence sign
 label       -> dual-judge (qwen3+glm-5) signed privacy valence over privacy Social-Chem RoTs
 """
+
 from __future__ import annotations
+
 import json
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, stable_frac
 
 PRIVACY_CONFIG = {
     "base_model": "BAAI/bge-m3",
@@ -62,7 +64,7 @@ class PrivacyBSEPairSource(PairSource):
                     if sign == "0":
                         continue  # keep only directional items (both classes needed)
                     seen.add(text)
-                    bucket = "pv_%d" % int(stable_frac("pbkt|" + text[:24]) * 40)
+                    bucket = f"pv_{int(stable_frac('pbkt|' + text[:24]) * 40)}"
                     rows.append((bucket, text[:800], sign))
             self._rows_cache = rows
         return self._rows_cache
@@ -92,7 +94,7 @@ class PrivacyBSEPairSource(PairSource):
         train, _ = self._split()
         by_sign = self._index(train)
         rng = np.random.default_rng(0)
-        for i, (topic, text, s) in enumerate(train):
+        for _i, (topic, text, s) in enumerate(train):
             jp = self._sample_diff_topic(by_sign[s], train, topic, rng)
             opp = [x for x in by_sign if x != s and by_sign[x]]
             jn = None
@@ -108,7 +110,7 @@ class PrivacyBSEPairSource(PairSource):
         by_sign = self._index(held)
         rng = np.random.default_rng(1)
         structural_pairs, surface_pairs = [], []
-        for i, (topic, text, s) in enumerate(held):
+        for _i, (topic, text, s) in enumerate(held):
             jp = self._sample_diff_topic(by_sign[s], held, topic, rng)
             opp = [x for x in by_sign if x != s and by_sign[x]]
             jn = None
@@ -119,7 +121,13 @@ class PrivacyBSEPairSource(PairSource):
                 continue
             structural_pairs.append((text, held[jp][1], True))
             structural_pairs.append((text, held[jn][1], False))
-            surface_pairs.append((text, ("Generally, " + text[0].lower() + text[1:]) if text else text))
+            surface_pairs.append(
+                (text, ("Generally, " + text[0].lower() + text[1:]) if text else text)
+            )
             if len(surface_pairs) >= 600:
                 break
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

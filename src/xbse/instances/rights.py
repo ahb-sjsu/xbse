@@ -10,17 +10,23 @@ independent label -> ECHR judgments (which Convention article was violated)
 
 Data: pulled from HF in-pod (like MBPP / recipes).
 """
+
 from __future__ import annotations
-from typing import Iterator
+
+from collections.abc import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, stable_frac
 
 RIGHTS_CONFIG = {"base_model": "BAAI/bge-m3", "holdout_frac": 0.1, "max_cases": 9000}
-_DATASETS = [("coastalcph/lex_glue", "ecthr_a"), ("lex_glue", "ecthr_a"),
-             ("lex_glue", "ecthr_b"), ("ecthr_cases", "alleged-violation-prediction")]
+_DATASETS = [
+    ("coastalcph/lex_glue", "ecthr_a"),
+    ("lex_glue", "ecthr_a"),
+    ("lex_glue", "ecthr_b"),
+    ("ecthr_cases", "alleged-violation-prediction"),
+]
 
 
 class RightsBSEPairSource(PairSource):
@@ -39,10 +45,15 @@ class RightsBSEPairSource(PairSource):
     def _rows(self):
         if self._rows_cache is None:
             from datasets import load_dataset
+
             ds = None
             for name, cfg in _DATASETS:
                 try:
-                    ds = load_dataset(name, cfg, split="train") if cfg else load_dataset(name, split="train")
+                    ds = (
+                        load_dataset(name, cfg, split="train")
+                        if cfg
+                        else load_dataset(name, split="train")
+                    )
                     break
                 except Exception:
                     continue
@@ -52,11 +63,16 @@ class RightsBSEPairSource(PairSource):
             for i, d in enumerate(ds):
                 if i >= self.max_cases:
                     break
-                facts = d.get("text") or d.get("facts")           # lex_glue uses "text" (list of paragraphs)
+                facts = d.get("text") or d.get("facts")  # lex_glue uses "text" (list of paragraphs)
                 facts = " ".join(facts) if isinstance(facts, list) else str(facts or "")
-                labels = d.get("labels") or d.get("allegedly_violated_articles") or d.get("violated_articles") or []
+                labels = (
+                    d.get("labels")
+                    or d.get("allegedly_violated_articles")
+                    or d.get("violated_articles")
+                    or []
+                )
                 if isinstance(labels, list) and labels and len(facts) > 120:
-                    rows.append((str(i), facts.strip()[:1500], str(labels[0])))   # primary article
+                    rows.append((str(i), facts.strip()[:1500], str(labels[0])))  # primary article
             self._rows_cache = rows
         return self._rows_cache
 
@@ -84,7 +100,7 @@ class RightsBSEPairSource(PairSource):
     def train_triplets(self) -> Iterator[Triplet]:
         train, _ = self._split()
         by_art = self._by_article(train)
-        all_idx = list(range(len(train)))
+        list(range(len(train)))
         rng = np.random.default_rng(0)
         for i, (_id, facts, art) in enumerate(train):
             same = by_art[art]
@@ -92,7 +108,7 @@ class RightsBSEPairSource(PairSource):
                 continue
             jp = self._sample(same, rng, exclude=i)
             jn = int(rng.integers(len(train)))
-            if train[jn][2] == art:                        # ensure different article
+            if train[jn][2] == art:  # ensure different article
                 jn = (jn + 1) % len(train)
             if jp is not None:
                 yield Triplet(anchor=facts, positive=train[jp][1], negative=train[jn][1])
@@ -112,9 +128,15 @@ class RightsBSEPairSource(PairSource):
                 jn = (jn + 1) % len(held)
             if jp is None:
                 continue
-            structural_pairs.append((facts, held[jp][1], True))    # same article -> near
-            structural_pairs.append((facts, held[jn][1], False))   # different article -> far
-            surface_pairs.append((facts[:750], facts[:1500]))      # same case, different span -> surface
+            structural_pairs.append((facts, held[jp][1], True))  # same article -> near
+            structural_pairs.append((facts, held[jn][1], False))  # different article -> far
+            surface_pairs.append(
+                (facts[:750], facts[:1500])
+            )  # same case, different span -> surface
             if len(surface_pairs) >= 600:
                 break
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

@@ -9,6 +9,7 @@ Usage: python scripts/run_instance.py <instance> [--data DIR] [--steps N]
 The report is printed as JSON between REPORT_BEGIN / REPORT_END so `kubectl logs` is enough to
 retrieve the verdict — no PVC needed.
 """
+
 import argparse
 import os
 import sys
@@ -22,15 +23,19 @@ from xbse.train import train
 def build(inst, data):
     if inst == "reabse":
         from xbse.instances import ReaBSEPairSource
+
         return ReaBSEPairSource(data_dir=data), 192
     if inst == "codebse":
         from xbse.instances import CodeBSEPairSource
+
         return CodeBSEPairSource(), 256
     if inst == "scibse":
         from xbse.instances import SciBSEPairSource
+
         return SciBSEPairSource(), 192
     if inst == "mobse":
         from xbse.instances import MoBSEPairSource
+
         return MoBSEPairSource(), 64
     raise SystemExit(f"unknown instance {inst}")
 
@@ -45,8 +50,15 @@ def main():
 
     src, max_len = build(a.instance, a.data)
     enc = BSEEncoder(base_model="BAAI/bge-m3", max_len=max_len, device="cuda")
-    report = train(enc, src, epochs=1, batch_size=a.batch, lr=2e-5, max_steps=a.steps,
-                   checkpoint_path=f"/tmp/{a.instance}.pt")
+    report = train(
+        enc,
+        src,
+        epochs=1,
+        batch_size=a.batch,
+        lr=2e-5,
+        max_steps=a.steps,
+        checkpoint_path=f"/tmp/{a.instance}.pt",
+    )
     print("REPORT_BEGIN")
     print(report.to_json())
     print("REPORT_END")

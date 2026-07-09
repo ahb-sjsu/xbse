@@ -9,17 +9,20 @@ Reports, alongside the mandatory gate:
   - severity_auroc   : does the general 'severity' polar axis transfer, even if specifics don't
   - domain_acc       : adversary's final corpus-ID accuracy (want it near chance = de-confounded)
 """
+
 from __future__ import annotations
+
 import random
+
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.optim import AdamW
 
-from .objective import info_nce
 from .adversarial import DomainHead, dann_lambda, polar_severity
-from .validate import gate
+from .objective import info_nce
 from .report import Report, hash_checkpoint
+from .validate import gate
 
 
 def _auroc(scores: np.ndarray, labels: np.ndarray) -> float:
@@ -33,19 +36,29 @@ def _auroc(scores: np.ndarray, labels: np.ndarray) -> float:
     return (ranks[pos].sum() - n_pos * (n_pos + 1) / 2) / (n_pos * n_neg)
 
 
-def train_adversarial(encoder, source, epochs: int = 1, batch_size: int = 24, lr: float = 2e-5,
-                      temperature: float = 0.05, max_steps: int | None = None,
-                      max_lambda: float = 1.0, checkpoint_path: str | None = None,
-                      report_path: str | None = None) -> Report:
+def train_adversarial(
+    encoder,
+    source,
+    epochs: int = 1,
+    batch_size: int = 24,
+    lr: float = 2e-5,
+    temperature: float = 0.05,
+    max_steps: int | None = None,
+    max_lambda: float = 1.0,
+    checkpoint_path: str | None = None,
+    report_path: str | None = None,
+) -> Report:
     source.check_admission()
     source.assert_heldout_disjoint()
 
-    tagged = list(source.train_triplets_tagged())       # (Triplet, anchor_domain)
+    tagged = list(source.train_triplets_tagged())  # (Triplet, anchor_domain)
     triplets = [t for t, _d in tagged]
     anchor_dom = [d for _t, d in tagged]
-    dom_rows = source.train_rows()                      # (text, domain_idx) for final probe only
+    dom_rows = source.train_rows()  # (text, domain_idx) for final probe only
     n_domains = source.n_domains
-    print(f"[{source.name}] {len(triplets)} cross-dataset triplets, {n_domains} corpora", flush=True)
+    print(
+        f"[{source.name}] {len(triplets)} cross-dataset triplets, {n_domains} corpora", flush=True
+    )
 
     dim = encoder.forward(["probe"]).shape[-1]
     domain_head = DomainHead(dim, n_domains).to(encoder.device)
@@ -58,7 +71,7 @@ def train_adversarial(encoder, source, epochs: int = 1, batch_size: int = 24, lr
     for ep in range(epochs):
         random.shuffle(order)
         for i in range(0, len(order), batch_size):
-            idx = order[i:i + batch_size]
+            idx = order[i : i + batch_size]
             batch = [triplets[j] for j in idx]
             za = encoder([t.anchor for t in batch])
             zp = encoder([t.positive for t in batch])
@@ -71,12 +84,16 @@ def train_adversarial(encoder, source, epochs: int = 1, batch_size: int = 24, lr
             dlogits = domain_head(za, lambd)
             dloss = F.cross_entropy(dlogits, dlabels)
             (loss + dloss).backward()
-            opt.step(); opt.zero_grad()
+            opt.step()
+            opt.zero_grad()
             step += 1
             if step % 50 == 0:
                 dacc = (dlogits.argmax(-1) == dlabels).float().mean().item()
-                print(f"  ep{ep} step{step} nce{loss.item():.3f} dom{dloss.item():.3f} "
-                      f"lam{lambd:.2f} dacc{dacc:.2f}", flush=True)
+                print(
+                    f"  ep{ep} step{step} nce{loss.item():.3f} dom{dloss.item():.3f} "
+                    f"lam{lambd:.2f} dacc{dacc:.2f}",
+                    flush=True,
+                )
             if max_steps and step >= max_steps:
                 break
         if max_steps and step >= max_steps:
@@ -93,7 +110,8 @@ def train_adversarial(encoder, source, epochs: int = 1, batch_size: int = 24, lr
     anchors = [a for a, _b, _l in sp]
     others = [b for _a, b, _l in sp]
     labels = np.array([1 if l else 0 for _a, _b, l in sp])
-    za = encoder.encode(anchors); zb = encoder.encode(others)
+    za = encoder.encode(anchors)
+    zb = encoder.encode(others)
     mean_dir = F.normalize(za.mean(0), dim=-1)
     sev = (polar_severity(zb, mean_dir) - polar_severity(za, mean_dir)).abs().neg().cpu().numpy()
     severity_auroc = _auroc(sev, labels)
@@ -109,14 +127,18 @@ def train_adversarial(encoder, source, epochs: int = 1, batch_size: int = 24, lr
         instance=source.name,
         checkpoint_hash=hash_checkpoint(checkpoint_path) if checkpoint_path else "unsaved",
         thresholds=metrics["thresholds"],
-        metrics={**{k: metrics[k] for k in ("surface_invariance", "fuzz_ratio", "structure_auroc")},
-                 "severity_auroc": round(float(severity_auroc), 4),
-                 "domain_acc": round(domain_acc, 4),
-                 "domain_chance": round(1.0 / n_domains, 4)},
+        metrics={
+            **{k: metrics[k] for k in ("surface_invariance", "fuzz_ratio", "structure_auroc")},
+            "severity_auroc": round(float(severity_auroc), 4),
+            "domain_acc": round(domain_acc, 4),
+            "domain_chance": round(1.0 / n_domains, 4),
+        },
         passed=metrics["passed"],
     )
     print("=== CROSS-DATASET GATE (joint + adversarial) ===")
     print(report.to_json(report_path))
-    print(f"severity_auroc={severity_auroc:.4f}  domain_acc={domain_acc:.4f} "
-          f"(chance={1.0/n_domains:.3f})")
+    print(
+        f"severity_auroc={severity_auroc:.4f}  domain_acc={domain_acc:.4f} "
+        f"(chance={1.0/n_domains:.3f})"
+    )
     return report

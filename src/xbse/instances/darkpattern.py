@@ -9,14 +9,16 @@ invariance  -> positives = same valence (both manipulative or both respectful), 
 sensitivity -> negatives = opposite valence
 label       -> ec-darkpattern binary dark-pattern annotation (independent of z)
 """
+
 from __future__ import annotations
+
 import csv
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac, _norm
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, _norm, stable_frac
 
 DARKPATTERN_CONFIG = {
     "base_model": "BAAI/bge-m3",
@@ -45,7 +47,9 @@ class AutonomyDarkBSEPairSource(PairSource):
             with open(self.tsv, newline="", encoding="utf-8", errors="replace") as f:
                 for row in csv.DictReader(f, delimiter="\t"):
                     text = (row.get("text") or "").strip().replace("\n", " ")
-                    key = _norm(text)   # dedup by normalized form (dark-pattern text is short/repetitive)
+                    key = _norm(
+                        text
+                    )  # dedup by normalized form (dark-pattern text is short/repetitive)
                     if len(text) < 10 or key in seen:
                         continue
                     try:
@@ -61,7 +65,9 @@ class AutonomyDarkBSEPairSource(PairSource):
     def _split(self):
         train, held = [], []
         for r in self._rows():
-            (held if stable_frac("autonomy_dark|" + r[1][:60]) < self.holdout_frac else train).append(r)
+            (
+                held if stable_frac("autonomy_dark|" + r[1][:60]) < self.holdout_frac else train
+            ).append(r)
         return train, held
 
     @staticmethod
@@ -83,7 +89,7 @@ class AutonomyDarkBSEPairSource(PairSource):
         train, _ = self._split()
         by_lab = self._index(train)
         rng = np.random.default_rng(0)
-        for i, (topic, text, lab) in enumerate(train):
+        for _i, (topic, text, lab) in enumerate(train):
             jp = self._sample_diff_topic(by_lab[lab], train, topic, rng)
             opp = by_lab[1 - lab]
             jn = opp[int(rng.integers(len(opp)))] if opp else None
@@ -96,7 +102,7 @@ class AutonomyDarkBSEPairSource(PairSource):
         by_lab = self._index(held)
         rng = np.random.default_rng(1)
         structural_pairs, surface_pairs = [], []
-        for i, (topic, text, lab) in enumerate(held):
+        for _i, (topic, text, lab) in enumerate(held):
             jp = self._sample_diff_topic(by_lab[lab], held, topic, rng)
             opp = by_lab[1 - lab]
             jn = opp[int(rng.integers(len(opp)))] if opp else None
@@ -104,7 +110,13 @@ class AutonomyDarkBSEPairSource(PairSource):
                 continue
             structural_pairs.append((text, held[jp][1], True))
             structural_pairs.append((text, held[jn][1], False))
-            surface_pairs.append((text, ("Reportedly, " + text[0].lower() + text[1:]) if text else text))
+            surface_pairs.append(
+                (text, ("Reportedly, " + text[0].lower() + text[1:]) if text else text)
+            )
             if len(surface_pairs) >= 600:
                 break
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

@@ -9,13 +9,15 @@ invariance  -> positives = same valence (both manipulative or both respectful), 
 sensitivity -> negatives = opposite valence
 label       -> MentalManip human manipulative/non-manipulative annotation (independent of z)
 """
+
 from __future__ import annotations
-from typing import Iterator
+
+from collections.abc import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, stable_frac
 
 MENTALMANIP_CONFIG = {
     "base_model": "BAAI/bge-m3",
@@ -41,6 +43,7 @@ class AutonomyBSEPairSource(PairSource):
         # (topic=bucket, text, manip)  manip: 1 manipulative, 0 respectful
         if self._rows_cache is None:
             from datasets import load_dataset
+
             ds = load_dataset(MENTALMANIP_CONFIG["hf"], MENTALMANIP_CONFIG["config"], split="train")
             rows = []
             for d in ds:
@@ -51,7 +54,8 @@ class AutonomyBSEPairSource(PairSource):
                     lab = int(d.get("manipulative"))
                 except (TypeError, ValueError):
                     continue
-                bucket = "mm_%d" % int(stable_frac("bkt|" + text[:24]) * 40)  # spread for decorrelation
+                # spread for decorrelation
+                bucket = f"mm_{int(stable_frac('bkt|' + text[:24]) * 40)}"
                 rows.append((bucket, text[:800], lab))
             self._rows_cache = rows
         return self._rows_cache
@@ -81,7 +85,7 @@ class AutonomyBSEPairSource(PairSource):
         train, _ = self._split()
         by_lab = self._index(train)
         rng = np.random.default_rng(0)
-        for i, (topic, text, lab) in enumerate(train):
+        for _i, (topic, text, lab) in enumerate(train):
             jp = self._sample_diff_topic(by_lab[lab], train, topic, rng)
             opp = by_lab[1 - lab]
             jn = opp[int(rng.integers(len(opp)))] if opp else None
@@ -94,7 +98,7 @@ class AutonomyBSEPairSource(PairSource):
         by_lab = self._index(held)
         rng = np.random.default_rng(1)
         structural_pairs, surface_pairs = [], []
-        for i, (topic, text, lab) in enumerate(held):
+        for _i, (topic, text, lab) in enumerate(held):
             jp = self._sample_diff_topic(by_lab[lab], held, topic, rng)
             opp = by_lab[1 - lab]
             jn = opp[int(rng.integers(len(opp)))] if opp else None
@@ -102,7 +106,13 @@ class AutonomyBSEPairSource(PairSource):
                 continue
             structural_pairs.append((text, held[jp][1], True))
             structural_pairs.append((text, held[jn][1], False))
-            surface_pairs.append((text, ("Reportedly, " + text[0].lower() + text[1:]) if text else text))
+            surface_pairs.append(
+                (text, ("Reportedly, " + text[0].lower() + text[1:]) if text else text)
+            )
             if len(surface_pairs) >= 600:
                 break
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

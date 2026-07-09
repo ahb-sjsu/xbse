@@ -14,27 +14,28 @@ Honest note: the fingerprint is coarser than SciBSE/CodeBSE's identity labels an
 carry annotator disagreement (that's why `rot-agree` exists), so the AUROC bar may be genuinely
 harder to hit here — a sub-bar-but-decorrelated result is itself a finding about moral structure.
 """
+
 from __future__ import annotations
+
 import csv
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, _norm, stable_frac
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, _norm, stable_frac
 
 MOBSE_CONFIG = {
     "base_model": "BAAI/bge-m3",
-    "social_chem_tsv":
-        "/archive/ethics-corpora/social-chem-101/social-chem-101/social-chem-101.v1.0.tsv",
-    "max_rows": None,   # full corpus (~292k) — the data lever
+    "social_chem_tsv": "/archive/ethics-corpora/social-chem-101/social-chem-101/social-chem-101.v1.0.tsv",
+    "max_rows": None,  # full corpus (~292k) — the data lever
 }
 
 
 def _augment(text: str, seed: int) -> str:
     prefixes = ["", "It is the case that ", "Generally, ", "As a rule, ", "In most cases, "]
     p = prefixes[seed % len(prefixes)]
-    return (p + (text[0].lower() + text[1:] if p and text else text))
+    return p + (text[0].lower() + text[1:] if p and text else text)
 
 
 def _jsign(v: str) -> str:
@@ -53,12 +54,19 @@ class MoBSEPairSource(PairSource):
         independent_label_source="Social-Chem-101 human Moral-Foundations + moral-judgment labels",
     )
 
-    def __init__(self, tsv: str | None = None, max_rows: int | None = None, clean: bool = True,
-                 foundation: str | None = None):
+    def __init__(
+        self,
+        tsv: str | None = None,
+        max_rows: int | None = None,
+        clean: bool = True,
+        foundation: str | None = None,
+    ):
         self.tsv = tsv or MOBSE_CONFIG["social_chem_tsv"]
         self.max_rows = max_rows
-        self.clean = clean   # clean-label: single-foundation + agreement>=3 only (drops the 23% ambiguous)
-        self.foundation = foundation   # if set: a per-foundation SUB-BSE (test 'MoBSE is too broad')
+        self.clean = (
+            clean  # clean-label: single-foundation + agreement>=3 only (drops the 23% ambiguous)
+        )
+        self.foundation = foundation  # if set: a per-foundation SUB-BSE (test 'MoBSE is too broad')
         self._rows_cache = None
         if foundation:
             self.name = "mobse_" + foundation.split("-")[0]
@@ -80,10 +88,10 @@ class MoBSEPairSource(PairSource):
                     except (TypeError, ValueError):
                         agree = 0
                     if self.clean and ("|" in mf or agree < 3):
-                        continue   # drop ambiguous (multi-foundation) / low-agreement labels
+                        continue  # drop ambiguous (multi-foundation) / low-agreement labels
                     if self.foundation and found != self.foundation:
-                        continue   # per-foundation sub-BSE: keep only this foundation's situations
-                    key = _norm(rot)   # dedup by the SAME normalized key the circularity guard uses
+                        continue  # per-foundation sub-BSE: keep only this foundation's situations
+                    key = _norm(rot)  # dedup by the SAME normalized key the circularity guard uses
                     if rot and found and topic and key not in seen:
                         # v2 fingerprint (best): Foundation x judgment-sign. v3's legality added noise.
                         seen[key] = (rot, (found, _jsign(row.get("action-moral-judgment"))), topic)
@@ -117,11 +125,11 @@ class MoBSEPairSource(PairSource):
         train, _ = self._split()
         by_fp, by_topic = self._index(train)
         rng = np.random.default_rng(0)
-        for i, (rot, fp, topic) in enumerate(train):
-            jp = self._sample(by_fp[fp], train, 2, topic, rng)          # same fp, DIFFERENT topic
+        for _i, (rot, fp, topic) in enumerate(train):
+            jp = self._sample(by_fp[fp], train, 2, topic, rng)  # same fp, DIFFERENT topic
             if jp is None:
                 continue
-            jn = self._sample(by_topic[topic], train, 1, fp, rng)       # same topic, DIFFERENT fp
+            jn = self._sample(by_topic[topic], train, 1, fp, rng)  # same topic, DIFFERENT fp
             neg = train[jn][0] if jn is not None else train[int(rng.integers(len(train)))][0]
             yield Triplet(anchor=rot, positive=train[jp][0], negative=neg)
 
@@ -135,9 +143,17 @@ class MoBSEPairSource(PairSource):
             jn = self._sample(by_topic[topic], held, 1, fp, rng)
             if jp is None or jn is None:
                 continue
-            structural_pairs.append((rot, held[jp][0], True))    # same fingerprint, different topic -> near
-            structural_pairs.append((rot, held[jn][0], False))   # same topic, different fingerprint -> far
+            structural_pairs.append(
+                (rot, held[jp][0], True)
+            )  # same fingerprint, different topic -> near
+            structural_pairs.append(
+                (rot, held[jn][0], False)
+            )  # same topic, different fingerprint -> far
             surface_pairs.append((rot, _augment(rot, i)))
             if len(surface_pairs) >= 600:
                 break
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

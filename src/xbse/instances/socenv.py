@@ -12,14 +12,16 @@ label       -> SBIC offensiveness + target-category annotation (independent of z
 SBIC is a script-based HF dataset (needs datasets<3 / trust_remote_code), so it is pre-exported to
 a JSONL once (via the datasets<3 venv) and read from disk here — keeping training on datasets 4.x.
 """
+
 from __future__ import annotations
+
 import json
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, stable_frac
 
 SOCENV_CONFIG = {
     "base_model": "BAAI/bge-m3",
@@ -85,7 +87,7 @@ class SocEnvBSEPairSource(PairSource):
         return None
 
     def _neg(self, rows, by_topic, by_lab, topic, lab, rng):
-        for k in by_topic.get(topic, []):     # same target group, opposite valence
+        for k in by_topic.get(topic, []):  # same target group, opposite valence
             if rows[k][2] != lab:
                 return k
         opp = by_lab[1 - lab]
@@ -95,7 +97,7 @@ class SocEnvBSEPairSource(PairSource):
         train, _ = self._split()
         by_lab, by_topic = self._index(train)
         rng = np.random.default_rng(0)
-        for i, (topic, post, lab) in enumerate(train):
+        for _i, (topic, post, lab) in enumerate(train):
             jp = self._sample_diff_topic(by_lab[lab], train, topic, rng)
             jn = self._neg(train, by_topic, by_lab, topic, lab, rng)
             if jp is None or jn is None:
@@ -107,14 +109,20 @@ class SocEnvBSEPairSource(PairSource):
         by_lab, by_topic = self._index(held)
         rng = np.random.default_rng(1)
         structural_pairs, surface_pairs = [], []
-        for i, (topic, post, lab) in enumerate(held):
+        for _i, (topic, post, lab) in enumerate(held):
             jp = self._sample_diff_topic(by_lab[lab], held, topic, rng)
             jn = self._neg(held, by_topic, by_lab, topic, lab, rng)
             if jp is None or jn is None:
                 continue
             structural_pairs.append((post, held[jp][1], True))
             structural_pairs.append((post, held[jn][1], False))
-            surface_pairs.append((post, ("As posted, " + post[0].lower() + post[1:]) if post else post))
+            surface_pairs.append(
+                (post, ("As posted, " + post[0].lower() + post[1:]) if post else post)
+            )
             if len(surface_pairs) >= 600:
                 break
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

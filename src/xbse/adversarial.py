@@ -16,7 +16,9 @@ to separate its pairs), so a per-dimension encoder scored 0.75-0.955 within its 
   whether the *general severity* transfers cross-dataset even when the specific direction does not
   — an honest partial-win metric, reported alongside the headline structure AUROC.
 """
+
 from __future__ import annotations
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -47,9 +49,7 @@ class DomainHead(nn.Module):
 
     def __init__(self, dim: int, n_domains: int, hidden: int = 256):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(dim, hidden), nn.ReLU(), nn.Linear(hidden, n_domains)
-        )
+        self.net = nn.Sequential(nn.Linear(dim, hidden), nn.ReLU(), nn.Linear(hidden, n_domains))
 
     def forward(self, z: torch.Tensor, lambd: float) -> torch.Tensor:
         return self.net(grad_reverse(z, lambd))

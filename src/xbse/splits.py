@@ -4,9 +4,11 @@ Splitting a domain by a stable KEY (paper id, case id, rule id) guarantees no le
 train and held-out. `assert_disjoint` is the teeth: it hashes training text and throws if any
 held-out / reserved-boundary item reuses it. Comments get violated; this raises.
 """
+
 from __future__ import annotations
+
 import re
-from typing import Hashable, Iterable
+from collections.abc import Iterable
 
 from .pairs import CircularityError, stable_frac
 
@@ -28,9 +30,13 @@ def split_by_key(items: Iterable, key_fn, holdout_frac: float = 0.1, seed: int =
     return train, heldout
 
 
-def assert_disjoint(train_texts: Iterable[str], reserved_texts: Iterable[str], who: str = "instance"):
+def assert_disjoint(
+    train_texts: Iterable[str], reserved_texts: Iterable[str], who: str = "instance"
+):
     """Throw if any reserved (held-out / downstream-boundary) text appears in training."""
     train = {_norm(t) for t in train_texts}
     for t in reserved_texts:
         if _norm(t) in train:
-            raise CircularityError(f"[{who}] reserved/held-out text leaked into training: {t[:70]!r}")
+            raise CircularityError(
+                f"[{who}] reserved/held-out text leaked into training: {t[:70]!r}"
+            )

@@ -1,30 +1,41 @@
 """Smoke tests — no GPU/model needed. Verify the teeth (circularity guard) and the objective."""
+
 import pytest
 import torch
 import torch.nn.functional as F
 
-from xbse.pairs import PairSource, Triplet, CircularityError
 from xbse.admission import AdmissionCriteria, AdmissionError
 from xbse.objective import info_nce
-from xbse.report import Report, require_pass, NotValidatedError
+from xbse.pairs import CircularityError, PairSource, Triplet
+from xbse.report import NotValidatedError, Report, require_pass
 
 
 class _Leaky(PairSource):
     name = "leaky"
+
     def train_triplets(self):
         yield Triplet("a shared rule", "a shared rule (para)", "the opposite rule")
+
     def heldout_eval(self):
-        return {"structural_pairs": [("a shared rule", "other", True)],  # leaks train text
-                "surface_pairs": [], "ood_texts": []}
+        return {
+            "structural_pairs": [("a shared rule", "other", True)],  # leaks train text
+            "surface_pairs": [],
+            "ood_texts": [],
+        }
 
 
 class _Clean(PairSource):
     name = "clean"
+
     def train_triplets(self):
         yield Triplet("train anchor", "train anchor variant", "train negative")
+
     def heldout_eval(self):
-        return {"structural_pairs": [("held x", "held y", True)],
-                "surface_pairs": [("held x", "held x paraphrase")], "ood_texts": []}
+        return {
+            "structural_pairs": [("held x", "held y", True)],
+            "surface_pairs": [("held x", "held x paraphrase")],
+            "ood_texts": [],
+        }
 
 
 def test_circularity_guard_throws():
@@ -33,20 +44,21 @@ def test_circularity_guard_throws():
 
 
 def test_clean_source_passes():
-    _Clean().assert_heldout_disjoint()   # must not raise
+    _Clean().assert_heldout_disjoint()  # must not raise
 
 
 def test_admission_filter_throws_on_missing_label_source():
     with pytest.raises(AdmissionError):
-        AdmissionCriteria(invariant_structure="beauty", surface_class="medium",
-                          independent_label_source="").validate("aesbse")
+        AdmissionCriteria(
+            invariant_structure="beauty", surface_class="medium", independent_label_source=""
+        ).validate("aesbse")
 
 
 def test_require_pass_refuses_fail_report_and_hash_mismatch():
     ok = Report("x", "abc123", {}, {}, passed=True)
-    require_pass(ok, "abc123")                          # matching PASS -> fine
+    require_pass(ok, "abc123")  # matching PASS -> fine
     with pytest.raises(NotValidatedError):
-        require_pass(ok, "different")                   # checkpoint hash mismatch
+        require_pass(ok, "different")  # checkpoint hash mismatch
     with pytest.raises(NotValidatedError):
         require_pass(Report("x", "abc123", {}, {}, passed=False), "abc123")  # FAIL report
 

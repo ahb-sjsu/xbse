@@ -28,10 +28,34 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "ruff>=0.4"]
+dev = ["pytest>=7", "ruff>=0.6", "black>=24.0", "ty>=0.0.1a1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.ruff]
 line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = [
+    "E741",  # single-letter names (l, z) are used deliberately in the contrastive/geometry math
+    "E501",  # black owns line length (100); E501 is redundant noise on long strings/comments/URLs
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ty.environment]
+python-version = "3.10"
+
+[tool.ty.rules]
+# ty is pre-1.0; unresolved third-party imports (torch/transformers) stay advisory, not fatal.
+unresolved-import = "warn"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]

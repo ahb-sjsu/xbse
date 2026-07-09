@@ -5,10 +5,12 @@ metrics + PASS/FAIL). Downstream tools call `require_pass(report, checkpoint_has
 construct on anything without a matching PASS. That is what makes "tools import a validated core"
 real rather than directory hygiene (design §2.4 flag).
 """
+
 from __future__ import annotations
+
 import hashlib
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 
 
 def hash_checkpoint(path: str) -> str:
@@ -49,9 +51,11 @@ def require_pass(report: Report, checkpoint_hash: str) -> Report:
     """Gate for downstream tools. Call before constructing anything on an instance."""
     if not report.passed:
         raise NotValidatedError(
-            f"[{report.instance}] report is FAIL — no tools may be built. Iterate the encoder.")
+            f"[{report.instance}] report is FAIL — no tools may be built. Iterate the encoder."
+        )
     if report.checkpoint_hash != checkpoint_hash:
         raise NotValidatedError(
             f"[{report.instance}] report is for checkpoint {report.checkpoint_hash}, but you loaded "
-            f"{checkpoint_hash}. A PASS report only validates the exact checkpoint it was run on.")
+            f"{checkpoint_hash}. A PASS report only validates the exact checkpoint it was run on."
+        )
     return report

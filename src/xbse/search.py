@@ -11,16 +11,22 @@ Per candidate: admission filter (reject on throw) -> frozen proxy -> cheap-train
 steps) -> held-out AUROC. Honest: reports the duds and rejects too. This is a DISCOVERY screen;
 survivors still go through the full gate.
 """
+
 from __future__ import annotations
 
-from .encoder import BSEEncoder
-from .train import train
 from .admission import AdmissionError
 from .discover import frozen_proxy
+from .encoder import BSEEncoder
+from .train import train
 
 
-def search(sources, base_model: str = "BAAI/bge-m3", steps: int = 300, batch: int = 32,
-           device: str = "cuda"):
+def search(
+    sources,
+    base_model: str = "BAAI/bge-m3",
+    steps: int = 300,
+    batch: int = 32,
+    device: str = "cuda",
+):
     rows = []
     for s in sources:
         try:
@@ -31,11 +37,19 @@ def search(sources, base_model: str = "BAAI/bge-m3", steps: int = 300, batch: in
         try:
             max_len = getattr(s, "max_len", 192)
             enc = BSEEncoder(base_model=base_model, max_len=max_len, device=device)
-            fp = frozen_proxy(s, enc)["structure_auroc_frozen"]          # BEFORE training
+            fp = frozen_proxy(s, enc)["structure_auroc_frozen"]  # BEFORE training
             rep = train(enc, s, epochs=1, batch_size=batch, max_steps=steps)  # cheap-train in place
             tr = rep.metrics["structure_auroc"]
-            rows.append({"name": s.name, "status": "ok", "frozen": fp, "trained": tr,
-                         "value_added": tr - fp, "passed": rep.passed})
+            rows.append(
+                {
+                    "name": s.name,
+                    "status": "ok",
+                    "frozen": fp,
+                    "trained": tr,
+                    "value_added": tr - fp,
+                    "passed": rep.passed,
+                }
+            )
         except Exception as e:
             rows.append({"name": s.name, "status": "error", "note": str(e)[:70]})
     rows.sort(key=lambda r: r.get("value_added", -9), reverse=True)
@@ -48,5 +62,7 @@ def print_table(rows) -> None:
         if r["status"] != "ok":
             print(f"  {r['name']:10s} {r['status']:8s} {'':7s} {'':7s} {'':11s} {r.get('note','')}")
         else:
-            print(f"  {r['name']:10s} {'ok':8s} {r['frozen']:.3f}   {r['trained']:.3f}   "
-                  f"{r['value_added']:+.3f}      {'PASS' if r['passed'] else ''}")
+            print(
+                f"  {r['name']:10s} {'ok':8s} {r['frozen']:.3f}   {r['trained']:.3f}   "
+                f"{r['value_added']:+.3f}      {'PASS' if r['passed'] else ''}"
+            )

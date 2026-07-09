@@ -8,21 +8,33 @@ invariance  -> positives = same judgment-sign (both honesty-upheld or both -viol
 sensitivity -> negatives = opposite sign, SAME situation (topic-decorrelation control)
 label       -> Social-Chem-101 action-moral-judgment sign on honesty RoTs (independent of z)
 """
+
 from __future__ import annotations
+
 import csv
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, stable_frac
 
 EPISTEMIC_CONFIG = {
     "base_model": "BAAI/bge-m3",
-    "social_chem_tsv":
-        "/archive/ethics-corpora/social-chem-101/social-chem-101/social-chem-101.v1.0.tsv",
-    "keywords": ("lie", "lying", "lied", "honest", "dishonest", "truth", "truthful",
-                 "deceive", "deceiv", "mislead", "misleading"),
+    "social_chem_tsv": "/archive/ethics-corpora/social-chem-101/social-chem-101/social-chem-101.v1.0.tsv",
+    "keywords": (
+        "lie",
+        "lying",
+        "lied",
+        "honest",
+        "dishonest",
+        "truth",
+        "truthful",
+        "deceive",
+        "deceiv",
+        "mislead",
+        "misleading",
+    ),
 }
 
 
@@ -76,7 +88,11 @@ class EpistemicBSEPairSource(PairSource):
     def _split(self):
         train, held = [], []
         for r in self._rows():
-            (held if stable_frac("epistemic|" + r[1].strip().lower()) < self.holdout_frac else train).append(r)
+            (
+                held
+                if stable_frac("epistemic|" + r[1].strip().lower()) < self.holdout_frac
+                else train
+            ).append(r)
         return train, held
 
     @staticmethod
@@ -100,11 +116,11 @@ class EpistemicBSEPairSource(PairSource):
         train, _ = self._split()
         by_sign, by_topic = self._index(train)
         rng = np.random.default_rng(0)
-        for i, (topic, rot, s) in enumerate(train):
-            jp = self._sample(by_sign[s], train, 0, topic, rng)      # same sign, diff topic
+        for _i, (topic, rot, s) in enumerate(train):
+            jp = self._sample(by_sign[s], train, 0, topic, rng)  # same sign, diff topic
             if jp is None:
                 continue
-            jn = self._sample(by_topic[topic], train, 2, s, rng)     # same topic, diff sign
+            jn = self._sample(by_topic[topic], train, 2, s, rng)  # same topic, diff sign
             neg = train[jn][1] if jn is not None else None
             if neg is None:
                 opp = [x for x in ("+", "-", "0") if x != s and by_sign.get(x)]
@@ -119,19 +135,23 @@ class EpistemicBSEPairSource(PairSource):
         by_sign, by_topic = self._index(held)
         rng = np.random.default_rng(1)
         structural_pairs, surface_pairs = [], []
-        for i, (topic, rot, s) in enumerate(held):
+        for _i, (topic, rot, s) in enumerate(held):
             jp = self._sample(by_sign[s], held, 0, topic, rng)
-            jn = self._sample(by_topic[topic], held, 2, s, rng)   # same topic, diff sign
-            if jn is None:                                        # honesty RoTs are topic-sparse:
+            jn = self._sample(by_topic[topic], held, 2, s, rng)  # same topic, diff sign
+            if jn is None:  # honesty RoTs are topic-sparse:
                 opp = [x for x in by_sign if x != s and by_sign[x]]  # fall back to any diff-sign
                 if opp:
                     pool = by_sign[opp[int(rng.integers(len(opp)))]]
                     jn = pool[int(rng.integers(len(pool)))]
             if jp is None or jn is None:
                 continue
-            structural_pairs.append((rot, held[jp][1], True))    # same sign, diff topic -> near
-            structural_pairs.append((rot, held[jn][1], False))   # diff sign, same topic -> far
+            structural_pairs.append((rot, held[jp][1], True))  # same sign, diff topic -> near
+            structural_pairs.append((rot, held[jn][1], False))  # diff sign, same topic -> far
             surface_pairs.append((rot, ("Generally, " + rot[0].lower() + rot[1:]) if rot else rot))
             if len(surface_pairs) >= 600:
                 break
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

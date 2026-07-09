@@ -18,21 +18,28 @@ A dimension is assembled from a list of domain specs: `(domain_name, rows)` wher
 `(text, sign)` with sign in {'+','-'} in ONE agreed valence convention for that dimension. Thin
 per-dimension builders live in `joint_builders.py`; all the mechanism is here.
 """
+
 from __future__ import annotations
-from typing import Iterator, Sequence
+
+from collections.abc import Iterator, Sequence
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac, _norm
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, _norm, stable_frac
 
 
 class JointPairSource(PairSource):
     max_len = 192
 
-    def __init__(self, name: str, domains: Sequence[tuple[str, Sequence[tuple[str, str]]]],
-                 holdout_frac: float = 0.1, invariant_structure: str = "",
-                 label_source: str = ""):
+    def __init__(
+        self,
+        name: str,
+        domains: Sequence[tuple[str, Sequence[tuple[str, str]]]],
+        holdout_frac: float = 0.1,
+        invariant_structure: str = "",
+        label_source: str = "",
+    ):
         self.name = name
         self._domain_specs = list(domains)
         self.domain_names = [d[0] for d in self._domain_specs]
@@ -62,7 +69,7 @@ class JointPairSource(PairSource):
     def _split(self):
         train, held = [], []
         for r in self._rows():
-            key = "joint|%s|%d|%s" % (self.name, r[0], r[1][:60])
+            key = f"joint|{self.name}|{r[0]}|{r[1][:60]}"
             (held if stable_frac(key) < self.holdout_frac else train).append(r)
         return train, held
 
@@ -79,8 +86,7 @@ class JointPairSource(PairSource):
     @staticmethod
     def _pick_cross(by_ds, rows, anchor_domain, sign, rng, n_domains):
         """Same sign, DIFFERENT domain if any such row exists; else same-sign any domain."""
-        others = [d for d in range(n_domains)
-                  if d != anchor_domain and by_ds.get((d, sign))]
+        others = [d for d in range(n_domains) if d != anchor_domain and by_ds.get((d, sign))]
         if others:
             d = others[int(rng.integers(len(others)))]
             pool = by_ds[(d, sign)]
@@ -108,9 +114,9 @@ class JointPairSource(PairSource):
         by_ds, by_sign = self._index(train)
         rng = np.random.default_rng(0)
         opp = {"+": "-", "-": "+"}
-        for i, (d, text, s) in enumerate(train):
-            jp = self._pick_cross(by_ds, train, d, s, rng, self.n_domains)         # cross-domain +
-            jn = self._pick_cross(by_ds, train, d, opp[s], rng, self.n_domains)    # cross-domain -
+        for _i, (d, text, s) in enumerate(train):
+            jp = self._pick_cross(by_ds, train, d, s, rng, self.n_domains)  # cross-domain +
+            jn = self._pick_cross(by_ds, train, d, opp[s], rng, self.n_domains)  # cross-domain -
             if jp is None or jn is None:
                 continue
             yield Triplet(anchor=text, positive=train[jp][1], negative=train[jn][1]), d
@@ -121,7 +127,7 @@ class JointPairSource(PairSource):
         rng = np.random.default_rng(1)
         opp = {"+": "-", "-": "+"}
         structural_pairs, surface_pairs = [], []
-        for i, (d, text, s) in enumerate(held):
+        for _i, (d, text, s) in enumerate(held):
             # force BOTH comparisons into a different corpus than the anchor -> cross-domain AUROC
             jp = self._pick_cross(by_ds, held, d, s, rng, self.n_domains)
             jn = self._pick_cross(by_ds, held, d, opp[s], rng, self.n_domains)
@@ -129,7 +135,13 @@ class JointPairSource(PairSource):
                 continue
             structural_pairs.append((text, held[jp][1], True))
             structural_pairs.append((text, held[jn][1], False))
-            surface_pairs.append((text, ("Reportedly, " + text[0].lower() + text[1:]) if text else text))
+            surface_pairs.append(
+                (text, ("Reportedly, " + text[0].lower() + text[1:]) if text else text)
+            )
             if len(surface_pairs) >= 600:
                 break
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

@@ -9,16 +9,17 @@ Data: MBPP (public, ~974 problems: {text: spec, code: solution}). Pod loads it f
 point at a jsonl with the same fields. Behaviour-equivalence (running the tests) is the stronger
 oracle to swap in for v2.
 """
+
 from __future__ import annotations
-import json
-import os
-from typing import Iterator
 
 import ast
+import json
+import os
 import random
+from collections.abc import Iterator
 
-from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, stable_frac
 
 CODEBSE_CONFIG = {"base_model": "BAAI/bge-m3", "holdout_frac": 0.1, "hf_dataset": "mbpp"}
 
@@ -42,13 +43,14 @@ def _augment_code(code: str, seed: int) -> str:
         return code
     new = [f"v{i}" for i in range(len(locals_))]
     random.Random(seed).shuffle(new)
-    mapping = dict(zip(sorted(locals_), new))
+    mapping = dict(zip(sorted(locals_), new, strict=False))
 
     class _R(ast.NodeTransformer):
         def visit_Name(self, n):
             if n.id in mapping:
                 n.id = mapping[n.id]
             return n
+
         def visit_arg(self, n):
             if n.arg in mapping:
                 n.arg = mapping[n.arg]
@@ -68,7 +70,9 @@ class CodeBSEPairSource(PairSource):
         independent_label_source="problem identity (spec↔solution); test-equivalence oracle for v2",
     )
 
-    def __init__(self, jsonl: str | None = None, hf_dataset: str = "mbpp", holdout_frac: float = 0.1):
+    def __init__(
+        self, jsonl: str | None = None, hf_dataset: str = "mbpp", holdout_frac: float = 0.1
+    ):
         self.jsonl = jsonl
         self.hf_dataset = hf_dataset
         self.holdout_frac = holdout_frac
@@ -80,9 +84,12 @@ class CodeBSEPairSource(PairSource):
             if self.jsonl and os.path.exists(self.jsonl):
                 for line in open(self.jsonl, encoding="utf-8"):
                     d = json.loads(line)
-                    rows.append((str(d.get("task_id", len(rows))), d["text"].strip(), d["code"].strip()))
+                    rows.append(
+                        (str(d.get("task_id", len(rows))), d["text"].strip(), d["code"].strip())
+                    )
             else:
-                from datasets import load_dataset             # NRP pods have internet
+                from datasets import load_dataset  # NRP pods have internet
+
                 # namespaced id + config (newer huggingface_hub rejects bare "mbpp")
                 ds = load_dataset("google-research-datasets/mbpp", "full", split="train")
                 for i, d in enumerate(ds):
@@ -99,17 +106,21 @@ class CodeBSEPairSource(PairSource):
             (held if b < self.holdout_frac else train).append(r)
         return train, held
 
-    AUG_PER_PROBLEM = 8   # variable-renaming group augmentation (fixes MBPP's ~974-problem starvation)
+    AUG_PER_PROBLEM = (
+        8  # variable-renaming group augmentation (fixes MBPP's ~974-problem starvation)
+    )
 
     def train_triplets(self) -> Iterator[Triplet]:
         train, _ = self._split()
         n = len(train)
         for i, (_tid, spec, code) in enumerate(train):
             for a in range(self.AUG_PER_PROBLEM):
-                aug = _augment_code(code, seed=1000 * i + a)     # same behaviour, renamed vars
-                neg = train[(i + 1 + a) % n][2]                  # a different problem's code
-                yield Triplet(anchor=spec, positive=aug, negative=neg)   # spec <-> behaviour
-                yield Triplet(anchor=code, positive=aug, negative=neg)   # behaviour-invariance (code<->code)
+                aug = _augment_code(code, seed=1000 * i + a)  # same behaviour, renamed vars
+                neg = train[(i + 1 + a) % n][2]  # a different problem's code
+                yield Triplet(anchor=spec, positive=aug, negative=neg)  # spec <-> behaviour
+                yield Triplet(
+                    anchor=code, positive=aug, negative=neg
+                )  # behaviour-invariance (code<->code)
 
     def heldout_eval(self) -> dict:
         _, held = self._split()
@@ -117,7 +128,13 @@ class CodeBSEPairSource(PairSource):
         structural_pairs, surface_pairs = [], []
         for i in range(m - 1):
             _tid, spec, code = held[i]
-            structural_pairs.append((spec, code, True))               # same problem spec<->code -> near
-            structural_pairs.append((spec, held[i + 1][2], False))    # different problem's code -> far
-            surface_pairs.append((spec, code))                        # same behaviour, different surface
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+            structural_pairs.append((spec, code, True))  # same problem spec<->code -> near
+            structural_pairs.append(
+                (spec, held[i + 1][2], False)
+            )  # different problem's code -> far
+            surface_pairs.append((spec, code))  # same behaviour, different surface
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

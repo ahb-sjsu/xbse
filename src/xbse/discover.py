@@ -15,11 +15,12 @@ not a verdict, and it's asymmetric:
 So: reject anything the admission filter throws on; among the admissible, prefer high frozen proxy,
 but a low proxy is "needs training + risk", not "impossible" (MoBSE was 0.20 frozen -> 0.77 trained).
 """
+
 from __future__ import annotations
 
+from .admission import AdmissionError
 from .encoder import BSEEncoder
 from .validate import structure_vs_surface_auroc, surface_invariance
-from .admission import AdmissionError
 
 
 def frozen_proxy(source, encoder) -> dict:
@@ -41,18 +42,35 @@ def discover(sources, base_model: str = "BAAI/bge-m3", device: str = "cuda", max
         try:
             s.check_admission()
         except AdmissionError as e:
-            rows.append({"name": s.name, "admissible": False, "structure_auroc_frozen": None,
-                         "surface_inv_frozen": None, "note": f"REJECTED: {str(e)[:80]}"})
+            rows.append(
+                {
+                    "name": s.name,
+                    "admissible": False,
+                    "structure_auroc_frozen": None,
+                    "surface_inv_frozen": None,
+                    "note": f"REJECTED: {str(e)[:80]}",
+                }
+            )
             continue
         try:
             p = frozen_proxy(s, enc)
             score = p["structure_auroc_frozen"]
-            note = ("high — validates easily" if score >= 0.75 else
-                    "low — needs training + risk" if score <= 0.55 else "moderate")
+            note = (
+                "high — validates easily"
+                if score >= 0.75
+                else "low — needs training + risk" if score <= 0.55 else "moderate"
+            )
             rows.append({"name": s.name, "admissible": True, **p, "note": note})
         except Exception as e:
-            rows.append({"name": s.name, "admissible": True, "structure_auroc_frozen": None,
-                         "surface_inv_frozen": None, "note": f"proxy error: {str(e)[:60]}"})
+            rows.append(
+                {
+                    "name": s.name,
+                    "admissible": True,
+                    "structure_auroc_frozen": None,
+                    "surface_inv_frozen": None,
+                    "note": f"proxy error: {str(e)[:60]}",
+                }
+            )
     rows.sort(key=lambda r: (r["admissible"], r["structure_auroc_frozen"] or -1), reverse=True)
     return rows
 
@@ -60,5 +78,9 @@ def discover(sources, base_model: str = "BAAI/bge-m3", device: str = "cuda", max
 def print_table(rows) -> None:
     print(f"{'instance':16s} {'admit':6s} {'frozen-AUROC':12s} {'note'}")
     for r in rows:
-        au = f"{r['structure_auroc_frozen']:.3f}" if r["structure_auroc_frozen"] is not None else "  -  "
+        au = (
+            f"{r['structure_auroc_frozen']:.3f}"
+            if r["structure_auroc_frozen"] is not None
+            else "  -  "
+        )
         print(f"  {r['name']:14s} {str(r['admissible']):6s} {au:12s} {r['note']}")

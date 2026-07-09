@@ -11,16 +11,18 @@ independent label -> ARC task identity + solve-correctness oracle (admission pas
 
 Data: ARC-AGI task JSONs (public). On NRP the pod clones fchollet/ARC-AGI; locally point at a dir.
 """
+
 from __future__ import annotations
+
 import glob
 import json
 import os
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, stable_frac
 
 REABSE_CONFIG = {"base_model": "BAAI/bge-m3", "holdout_frac": 0.1}
 
@@ -28,7 +30,8 @@ REABSE_CONFIG = {"base_model": "BAAI/bge-m3", "holdout_frac": 0.1}
 def _d4(grid, k):
     g = np.array(grid, dtype=int)
     if k >= 4:
-        g = np.fliplr(g); k -= 4
+        g = np.fliplr(g)
+        k -= 4
     return np.rot90(g, k).tolist()
 
 
@@ -48,8 +51,13 @@ def _augment(train_examples, seed: int):
     rng = np.random.default_rng(seed)
     k = int(rng.integers(0, 8))
     perm = list(rng.permutation(10))
-    return [{"input": _recolor(_d4(ex["input"], k), perm),
-             "output": _recolor(_d4(ex["output"], k), perm)} for ex in train_examples]
+    return [
+        {
+            "input": _recolor(_d4(ex["input"], k), perm),
+            "output": _recolor(_d4(ex["output"], k), perm),
+        }
+        for ex in train_examples
+    ]
 
 
 class ReaBSEPairSource(PairSource):
@@ -84,7 +92,9 @@ class ReaBSEPairSource(PairSource):
             (held if b < self.holdout_frac else train).append((tid, tr))
         return train, held
 
-    AUG_PER_TASK = 16   # D4xcolor group is huge; sample many augmentations per task (fix data starvation)
+    AUG_PER_TASK = (
+        16  # D4xcolor group is huge; sample many augmentations per task (fix data starvation)
+    )
 
     def train_triplets(self) -> Iterator[Triplet]:
         train, _ = self._split()
@@ -94,7 +104,7 @@ class ReaBSEPairSource(PairSource):
                 # augment BOTH anchor and positive -> forces group-invariance, not canonical->aug
                 anchor = _serialize(_augment(tr, seed=1000 * i + a))
                 positive = _serialize(_augment(tr, seed=1000 * i + a + 500))
-                negative = _serialize(train[(i + 1 + a) % n][1])   # vary the negative task too
+                negative = _serialize(train[(i + 1 + a) % n][1])  # vary the negative task too
                 yield Triplet(anchor=anchor, positive=positive, negative=negative)
 
     def heldout_eval(self) -> dict:
@@ -105,7 +115,11 @@ class ReaBSEPairSource(PairSource):
             base = _serialize(held[i][1])
             aug = _serialize(_augment(held[i][1], seed=10_000 + i))
             other = _serialize(held[i + 1][1])
-            structural_pairs.append((base, aug, True))       # same rule (augmented) -> near
-            structural_pairs.append((base, other, False))    # different rule -> far
-            surface_pairs.append((base, aug))                # same rule, different surface
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+            structural_pairs.append((base, aug, True))  # same rule (augmented) -> near
+            structural_pairs.append((base, other, False))  # different rule -> far
+            surface_pairs.append((base, aug))  # same rule, different surface
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

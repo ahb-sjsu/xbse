@@ -18,14 +18,16 @@ rule the action follows/violates, so including it would leak the label.
 Data: /archive/ethics-corpora/moral_stories/moral_stories_full.jsonl (12k stories; fields
 ID/norm/situation/intention/moral_action/immoral_action/consequences/label).
 """
+
 from __future__ import annotations
+
 import json
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, stable_frac
 
 MOSTORIES_CONFIG = {
     "base_model": "BAAI/bge-m3",
@@ -48,10 +50,11 @@ class MoralStoriesBSEPairSource(PairSource):
         independent_label_source="Moral Stories (Emelin et al.) human-written moral/immoral action pairs",
     )
 
-    def __init__(self, jsonl: str | None = None, max_rows: int | None = None,
-                 holdout_frac: float = 0.1):
+    def __init__(
+        self, jsonl: str | None = None, max_rows: int | None = None, holdout_frac: float = 0.1
+    ):
         self.jsonl = jsonl or MOSTORIES_CONFIG["jsonl"]
-        self.max_rows = max_rows          # cap #stories (not #items) for quick runs
+        self.max_rows = max_rows  # cap #stories (not #items) for quick runs
         self.holdout_frac = holdout_frac
         self._rows_cache = None
 
@@ -108,11 +111,11 @@ class MoralStoriesBSEPairSource(PairSource):
         by_val, by_story = self._index(train)
         rng = np.random.default_rng(0)
         for sid, txt, val in train:
-            jp = self._sample_other_story(by_val[val], train, sid, rng)   # same valence, diff story
+            jp = self._sample_other_story(by_val[val], train, sid, rng)  # same valence, diff story
             if jp is None:
                 continue
-            jn = by_story.get(sid, {}).get(1 - val)                       # MATCHED opposite valence
-            if jn is None:                                                # fallback: any opposite
+            jn = by_story.get(sid, {}).get(1 - val)  # MATCHED opposite valence
+            if jn is None:  # fallback: any opposite
                 opp = by_val[1 - val]
                 jn = opp[int(rng.integers(len(opp)))] if opp else None
             if jn is None:
@@ -126,16 +129,22 @@ class MoralStoriesBSEPairSource(PairSource):
         structural_pairs, surface_pairs = [], []
         seen_neg = set()
         for idx, (sid, txt, val) in enumerate(held):
-            jp = self._sample_other_story(by_val[val], held, sid, rng)   # same valence, diff story
-            jn = by_story.get(sid, {}).get(1 - val)                      # matched opposite valence
+            jp = self._sample_other_story(by_val[val], held, sid, rng)  # same valence, diff story
+            jn = by_story.get(sid, {}).get(1 - val)  # matched opposite valence
             if jp is None or jn is None:
                 continue
-            structural_pairs.append((txt, held[jp][1], True))            # same valence, diff story -> near
-            key = tuple(sorted((idx, jn)))                               # the matched pair is symmetric
-            if key not in seen_neg:                                      # add each matched neg once
-                structural_pairs.append((txt, held[jn][1], False))      # matched opposite valence -> far
+            structural_pairs.append((txt, held[jp][1], True))  # same valence, diff story -> near
+            key = tuple(sorted((idx, jn)))  # the matched pair is symmetric
+            if key not in seen_neg:  # add each matched neg once
+                structural_pairs.append(
+                    (txt, held[jn][1], False)
+                )  # matched opposite valence -> far
                 seen_neg.add(key)
             surface_pairs.append((txt, _augment(txt, idx)))
             if len(surface_pairs) >= 600:
                 break
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

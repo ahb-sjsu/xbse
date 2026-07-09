@@ -8,13 +8,15 @@ invariance  -> positives = two same-valence items (both harmful, or both safe), 
 sensitivity -> negatives = the MATCHED opposite-valence response to the SAME prompt (hard negative)
 label       -> BeaverTails human safety + harm-category annotation (independent of z)
 """
+
 from __future__ import annotations
-from typing import Iterator
+
+from collections.abc import Iterator
 
 import numpy as np
 
-from ..pairs import PairSource, Triplet, stable_frac
 from ..admission import AdmissionCriteria
+from ..pairs import PairSource, Triplet, stable_frac
 
 PHYSHARM_CONFIG = {
     "base_model": "BAAI/bge-m3",
@@ -23,8 +25,11 @@ PHYSHARM_CONFIG = {
     "max_rows": 30000,
 }
 _PHYS = (
-    "violence_aiding_and_abetting_incitement", "self_harm", "child_abuse",
-    "animal_abuse", "drug_abuse_weapons_banned_substance",
+    "violence_aiding_and_abetting_incitement",
+    "self_harm",
+    "child_abuse",
+    "animal_abuse",
+    "drug_abuse_weapons_banned_substance",
 )
 
 
@@ -37,7 +42,9 @@ class PhysHarmBSEPairSource(PairSource):
         independent_label_source="BeaverTails human safety + 14-category harm annotation",
     )
 
-    def __init__(self, split: str | None = None, max_rows: int | None = None, holdout_frac: float = 0.1):
+    def __init__(
+        self, split: str | None = None, max_rows: int | None = None, holdout_frac: float = 0.1
+    ):
         self.split = split or PHYSHARM_CONFIG["split"]
         self.max_rows = max_rows or PHYSHARM_CONFIG["max_rows"]
         self.holdout_frac = holdout_frac
@@ -47,6 +54,7 @@ class PhysHarmBSEPairSource(PairSource):
         # (topic=prompt, text, harm)  harm: 1 physical-harm, 0 safe
         if self._rows_cache is None:
             from datasets import load_dataset
+
             ds = load_dataset(PHYSHARM_CONFIG["hf"], split=self.split, streaming=True)
             rows = []
             for i, d in enumerate(ds):
@@ -57,7 +65,11 @@ class PhysHarmBSEPairSource(PairSource):
                 safe = bool(d.get("is_safe"))
                 if not (phys or safe):
                     continue  # skip non-physical unsafe (ambiguous for THIS dimension)
-                text = ((d.get("prompt", "") or "") + " -> " + (d.get("response", "") or "")).strip().replace("\n", " ")
+                text = (
+                    ((d.get("prompt", "") or "") + " -> " + (d.get("response", "") or ""))
+                    .strip()
+                    .replace("\n", " ")
+                )
                 if len(text) < 30:
                     continue
                 prompt = (d.get("prompt", "") or "").strip()
@@ -89,10 +101,10 @@ class PhysHarmBSEPairSource(PairSource):
         return None
 
     def _matched_or_any_neg(self, rows, by_topic, by_lab, i, topic, lab, rng):
-        for k in by_topic.get(topic, []):     # matched: same prompt, opposite valence
+        for k in by_topic.get(topic, []):  # matched: same prompt, opposite valence
             if rows[k][2] != lab:
                 return k
-        opp = by_lab[1 - lab]                  # fallback: any opposite-valence item
+        opp = by_lab[1 - lab]  # fallback: any opposite-valence item
         return opp[int(rng.integers(len(opp)))] if opp else None
 
     def train_triplets(self) -> Iterator[Triplet]:
@@ -116,9 +128,15 @@ class PhysHarmBSEPairSource(PairSource):
             jn = self._matched_or_any_neg(held, by_topic, by_lab, i, topic, lab, rng)
             if jp is None or jn is None:
                 continue
-            structural_pairs.append((text, held[jp][1], True))     # same valence, diff prompt -> near
-            structural_pairs.append((text, held[jn][1], False))    # opposite valence -> far
-            surface_pairs.append((text, ("Reportedly, " + text[0].lower() + text[1:]) if text else text))
+            structural_pairs.append((text, held[jp][1], True))  # same valence, diff prompt -> near
+            structural_pairs.append((text, held[jn][1], False))  # opposite valence -> far
+            surface_pairs.append(
+                (text, ("Reportedly, " + text[0].lower() + text[1:]) if text else text)
+            )
             if len(surface_pairs) >= 600:
                 break
-        return {"structural_pairs": structural_pairs, "surface_pairs": surface_pairs, "ood_texts": []}
+        return {
+            "structural_pairs": structural_pairs,
+            "surface_pairs": surface_pairs,
+            "ood_texts": [],
+        }

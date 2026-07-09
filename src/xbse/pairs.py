@@ -7,12 +7,14 @@ Circularity discipline: a PairSource must expose a train/held-out split, and any
 for downstream discontinuity testing must NOT appear in training positives/negatives — else the
 test is rigged. See docs/MOBSE_PLAN.md.
 """
+
 from __future__ import annotations
+
 import hashlib
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator
 
 from .admission import AdmissionCriteria
 
@@ -20,8 +22,8 @@ from .admission import AdmissionCriteria
 @dataclass
 class Triplet:
     anchor: str
-    positive: str      # same structure, different surface  (invariance target)
-    negative: str      # different structure                (sensitivity target)
+    positive: str  # same structure, different surface  (invariance target)
+    negative: str  # different structure                (sensitivity target)
 
 
 class CircularityError(RuntimeError):
@@ -55,6 +57,7 @@ class PairSource(ABC):
     def check_admission(self) -> AdmissionCriteria:
         if self.admission is None:
             from .admission import AdmissionError
+
             raise AdmissionError(f"[{self.name}] declares no AdmissionCriteria — cannot be built.")
         return self.admission.validate(self.name)
 
@@ -85,8 +88,10 @@ class PairSource(ABC):
             for txt in (a, b):
                 if _norm(txt) in train:
                     raise CircularityError(
-                        f"[{self.name}] held-out structural text leaked into training: {txt[:70]!r}")
-        for a, _para in ev["surface_pairs"]:          # the anchor of a surface pair, not its paraphrase
+                        f"[{self.name}] held-out structural text leaked into training: {txt[:70]!r}"
+                    )
+        for a, _para in ev["surface_pairs"]:  # the anchor of a surface pair, not its paraphrase
             if _norm(a) in train:
                 raise CircularityError(
-                    f"[{self.name}] held-out surface anchor leaked into training: {a[:70]!r}")
+                    f"[{self.name}] held-out surface anchor leaked into training: {a[:70]!r}"
+                )
