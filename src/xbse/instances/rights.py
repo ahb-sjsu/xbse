@@ -19,9 +19,8 @@ from ..pairs import PairSource, Triplet
 from ..admission import AdmissionCriteria
 
 RIGHTS_CONFIG = {"base_model": "BAAI/bge-m3", "holdout_frac": 0.1, "max_cases": 9000}
-_DATASETS = [("ecthr_cases", "alleged-violation-prediction"),
-             ("ecthr_cases", "violation-prediction"),
-             ("AUEB-NLP/ecthr_cases", None)]
+_DATASETS = [("coastalcph/lex_glue", "ecthr_a"), ("lex_glue", "ecthr_a"),
+             ("lex_glue", "ecthr_b"), ("ecthr_cases", "alleged-violation-prediction")]
 
 
 class RightsBSEPairSource(PairSource):
@@ -53,7 +52,7 @@ class RightsBSEPairSource(PairSource):
             for i, d in enumerate(ds):
                 if i >= self.max_cases:
                     break
-                facts = d.get("facts")
+                facts = d.get("text") or d.get("facts")           # lex_glue uses "text" (list of paragraphs)
                 facts = " ".join(facts) if isinstance(facts, list) else str(facts or "")
                 labels = d.get("labels") or d.get("allegedly_violated_articles") or d.get("violated_articles") or []
                 if isinstance(labels, list) and labels and len(facts) > 120:
