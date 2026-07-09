@@ -8,7 +8,8 @@ from .scibse import SciBSEPairSource, SCIBSE_CONFIG
 from .reabse import ReaBSEPairSource, REABSE_CONFIG
 from .codebse import CodeBSEPairSource, CODEBSE_CONFIG
 from .gabse import GaBSEPairSource, GABSE_CONFIG
+from .rights import RightsBSEPairSource, RIGHTS_CONFIG
 
 __all__ = ["MoBSEPairSource", "MOBSE_CONFIG", "SciBSEPairSource", "SCIBSE_CONFIG",
            "ReaBSEPairSource", "REABSE_CONFIG", "CodeBSEPairSource", "CODEBSE_CONFIG",
-           "GaBSEPairSource", "GABSE_CONFIG"]
+           "GaBSEPairSource", "GABSE_CONFIG", "RightsBSEPairSource", "RIGHTS_CONFIG"]
