@@ -59,8 +59,17 @@ of the framework, not a favor each instance does itself.
 
 ## Status
 
-Scaffold. First instance: **MoBSE v1** — not yet trained, not yet validated. Nothing downstream
-of the validation gate exists on purpose.
+Multiple instances trained and evaluated on a deterministic held-out split: per-foundation MoBSE
+sub-BSEs (care ≈0.85, fairness ≈0.87 held-out structure AUROC), RightsBSE (ECHR, ≈0.75), plus
+CodeBSE / ReaBSE / SciBSE / GaBSE and MoralStoriesBSE (matched hard negatives). Key results:
+per-foundation specialists beat a single broad MoBSE; longer training doesn't help (the lever is
+better negatives + more data); a `hash()`-seeded split bug that had inflated earlier numbers is
+fixed. See `experiments/risk_coverage_report.md` and `experiments/rank_test.py`.
+
+**How xBSE feeds the MoralVector:** each `*-BSE` is (or will be) the encoder for one DEME
+MoralVector dimension. The dimension↔feeder map, tensor mapping, and empirical support are in
+`erisml-lib/docs/moralvector_reference.md`. (Note: `mobse_sanctity` maps to **no** MoralVector
+axis and is retained only as an MFT-research artifact.)
 
 ## Kinship (not merged, on purpose)
 
