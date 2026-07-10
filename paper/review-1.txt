@@ -1,0 +1,258 @@
+Yes. This is a genuinely interesting paper, and the central hypothesis is strong. But as written, I would call it **promising and provocative**, not yet reviewer-proof.
+
+My overall read:
+
+**Concept: 8.5/10**
+**Current empirical support: 6.5–7/10**
+**Paper clarity: 7.5/10**
+**Main risk:** the headline claim may be ahead of the evidence.
+
+The strongest idea is the **“deontic gap”**: moral-dimension encoders transfer better when the dimension is epistemic or value-like, and worse when the dimension depends on authority, rights, legitimacy, or jurisdiction. The draft reports that eight of nine dimensions pass a cross-dataset validation gate, while `rights_respect` fails repeatedly, and that the three weakest dimensions are exactly the “Who-Decides” column of the 3×3 taxonomy. That is a compelling pattern. 
+
+But the paper currently needs sharper controls before the claim “the 3×3 structure predicts transferability” will survive hard review.
+
+## Bottom-line verdict
+
+This is a **good working draft with a publishable seed**. The negative-result framing is excellent. The `rights_respect` failure is much more interesting than another “we got high AUROC” paper. The paper’s strongest contribution is not “we built moral encoders”; it is:
+
+> Some moral concepts appear transferable across corpora, while others collapse under cross-dataset validation, and the failures may reveal structure in the moral domain itself.
+
+That is a good research claim. But I would soften the current title and thesis until you add more robustness tests. Right now, the paper shows a striking **post hoc structural pattern** over nine dimensions. It does not yet establish that the 3×3 taxonomy truly **predicts** transferability.
+
+A safer title would be:
+
+> **The Deontic Gap: Cross-Dataset Transfer in Moral-Dimension Encoders Is Weakest for Framework-Relative Concepts**
+
+or:
+
+> **The Deontic Gap: Evidence that Moral-Concept Transferability Varies by Mode of Moral Reasoning**
+
+## What is strongest
+
+The paper has a real methodological contribution: it rejects within-corpus performance as insufficient and insists on **cross-dataset validation**. That is exactly right. The draft explicitly says earlier single-corpus models scored high within training corpora but collapsed near chance on a second corpus, which is a strong motivation for the cross-corpus design. 
+
+The bag-of-words control is also valuable. Requiring the encoder to beat both an untrained encoder and a lexical baseline by a pre-registered margin is a much better standard than reporting raw AUROC alone. 
+
+The most interesting section is the `rights_respect` case study. Four failed configurations — ECHR vs. ETHICS-justice, ECHR vs. CourtListener, class-balanced CourtListener, and a bodily-integrity/excessive-force stratified test — make the failure hard to dismiss casually. 
+
+The privacy contrast is probably the paper’s best interpretive move. Privacy transfers well when framed as exposure-harm, even though privacy is legally a right. That distinction — **universal conduct/harm signal versus framework-relative legal entitlement** — is much more precise than simply saying “rights do not transfer.” 
+
+## Major concern 1: the headline claim is underpowered
+
+The central result is based on **nine dimensions total**, three per column. The draft acknowledges this, which is good, but the title and abstract still sound stronger than the evidence supports. 
+
+The column means are striking:
+
+| Mode         | Mean AUROC |
+| ------------ | ---------: |
+| What-We-Know |      0.829 |
+| What-Matters |      0.782 |
+| Who-Decides  |      0.602 |
+
+But with only three examples per column, the result could be driven by corpus choice, label quality, genre mismatch, class balance, or one extreme failure. `rights_respect` at 0.475 heavily pulls down the deontic column. `physical_harm` at 0.622 also helps create the gap, but physical harm is arguably not purely deontic; many readers will see harm as a welfare/value concept rather than a “Who-Decides” concept.
+
+**Actionable fix:** add a robustness subsection with:
+
+1. Leave-one-out column means.
+2. A permutation test over column assignments.
+3. Confidence intervals over dimensions and over training seeds.
+4. A taxonomy-ablation table showing what happens if `physical_harm` is moved to the values column.
+5. At least one additional corpus pairing per column, especially for deontic dimensions.
+
+Until then, frame the result as:
+
+> “Transferability appears column-structured in this corpus design.”
+
+not:
+
+> “The 3×3 structure predicts transferability.”
+
+## Major concern 2: dimension-specificity is not yet proven
+
+The current evaluation asks whether a dimension encoder can distinguish same-sign from different-sign examples across corpora. But a skeptical reviewer may ask:
+
+> Did the encoder learn `care`, `fairness`, `privacy`, etc., or did it learn generic moral valence — good versus bad?
+
+This is a major issue. Many dimensions use `+` and `−` labels, and cross-corpus positives are same-sign. If positive examples across corpora are generally more prosocial, less harmful, less deceptive, or less toxic, a model could pass without learning the intended dimension.
+
+**Actionable fix:** add a **generic moral-valence baseline**.
+
+Train one pooled encoder over all dimensions using only `+`/`−` moral valence. Then compare each dimension-specific encoder against it. If the pooled valence encoder matches the per-dimension models, the paper becomes much weaker. If the per-dimension encoders beat the pooled model on their own dimensions, the paper becomes much stronger.
+
+Also add a **9×9 off-diagonal transfer matrix**:
+
+| Trained on → Evaluated on | autonomy | rights | privacy | care | harm | honesty | fairness | legitimacy | env |
+| ------------------------- | -------: | -----: | ------: | ---: | ---: | ------: | -------: | ---------: | --: |
+
+The diagonal should be strongest. If `virtue_care` also works on `physical_harm`, or `fairness_equity` also works on `rights_respect`, that reveals coupling or collapse. The draft already suspects care↔harm and fairness↔rights coupling; test it directly. 
+
+## Major concern 3: the corpus design may explain the column effect
+
+The deontic dimensions are not just different moral concepts; they may also be attached to harder datasets.
+
+`rights_respect` uses legal corpora and cross-jurisdiction transfer. `physical_harm` uses BeaverTails and ETHICS-harm. `legitimacy_trust` uses authority-like data. Meanwhile, some of the value and epistemic dimensions use corpora that may be closer in genre, such as Social-Chem and ETHICS-style commonsense vignettes. The draft acknowledges this genre concern, but it needs more than acknowledgment. 
+
+A reviewer could say:
+
+> The deontic column is not intrinsically harder; your deontic corpora are just less aligned.
+
+**Actionable fix:** create matched-genre tests.
+
+For example:
+
+| Question                                                  | Test                                                                                   |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Is rights hard because it is legal?                       | Build non-legal rights scenarios from vignettes and compare.                           |
+| Is care easy because Social-Chem and ETHICS are similar?  | Test care on a legal/medical/support corpus.                                           |
+| Is privacy easy because exposure-harm is lexically clean? | Test privacy across legal privacy cases versus everyday privacy vignettes.             |
+| Is legitimacy truly deontic-hard?                         | Use cross-jurisdiction institutional legitimacy corpora, not just authority vignettes. |
+
+The paper does not need all of these immediately, but it needs at least one or two to show the column effect is not an artifact of dataset availability.
+
+## Major concern 4: the lexical baseline is useful but too weak
+
+TF-IDF cosine near chance is encouraging, but it is not enough to say the encoders capture “provably non-lexical structure.” That wording is too strong. A simple bag-of-words cosine baseline is a weak lexical baseline.
+
+Add stronger baselines:
+
+| Baseline                                    | Why it matters                                                                |
+| ------------------------------------------- | ----------------------------------------------------------------------------- |
+| Supervised TF-IDF logistic regression       | Stronger lexical control than cosine.                                         |
+| Sentence-transformer zero-shot/base encoder | Shows fine-tuning gain over semantic prior.                                   |
+| Generic moral-valence encoder               | Tests whether dimensions are real or just positive/negative valence.          |
+| Length/style/domain baseline                | Tests whether pair construction leaks corpus artifacts.                       |
+| Sentiment/toxicity/emotion classifier       | Tests whether “moral signal” is affective sentiment.                          |
+| Same-corpus-only fine-tuned model           | Quantifies how much cross-corpus positives improve over ordinary fine-tuning. |
+
+Then replace “provably non-lexical” with something like:
+
+> “not explained by our lexical baselines.”
+
+That is safer and more scientifically precise.
+
+## Major concern 5: `rights_respect` failure is overinterpreted
+
+The rights failure is fascinating. But the draft currently says the method rehabilitated eight dimensions and therefore rights is “not a method failure.” That is too strong.
+
+It could still be a method failure for rights specifically. Rights may require longer context, legal hierarchy, jurisdiction conditioning, procedural posture, article-specific labels, or distinction between facts, holdings, and legal standards. Flat loss across four setups is evidence of a persistent failure, but it does not prove rights are inherently unlearnable cross-jurisdiction.
+
+**Actionable fix:** add sanity checks:
+
+1. **Within-corpus rights learning:** Can the model learn ECHR-only rights splits?
+2. **Within-jurisdiction cross-corpus:** US excessive-force ↔ US wrongful-detention, as the draft suggests.
+3. **Article-specific ECHR test:** Article 3 only, or Article 8 only, rather than aggregate violation labels.
+4. **Conduct-based rights labels:** “was someone detained, brutalized, censored, surveilled?” instead of “was a legal right violated?”
+5. **Legal-domain encoder baseline:** compare BGE-M3 with LegalBERT/Sentence-LegalBERT-style embeddings.
+6. **Long-context ablation:** rights facts may require more context than short moral vignettes.
+
+A safer claim:
+
+> “Rights did not transfer under four increasingly controlled configurations, suggesting either framework-relativity or unresolved corpus/label mismatch.”
+
+That keeps the hypothesis alive without overselling it.
+
+## Major concern 6: LLM labels need stronger validation
+
+The draft is honest that privacy, environmental, and CourtListener rights signs use dual LLM judges. That is a real threat. Two LLMs agreeing does not necessarily mean labels are correct; they may share the same normative bias, legal misunderstanding, or prompt-following artifact. 
+
+**Actionable fix:** add a small human audit.
+
+You do not need full human annotation of everything. Even this would help:
+
+| Dataset slice                 | Human labels needed |
+| ----------------------------- | ------------------: |
+| privacy                       |             100–200 |
+| environmental                 |             100–200 |
+| CourtListener rights positive |                 100 |
+| CourtListener rights negative |                 100 |
+| universal-core rights slice   | all 369 if feasible |
+
+Report agreement between humans and each LLM, not only LLM↔LLM agreement. Include the prompts in an appendix. Also explain how neutral labels are handled, how disagreements are adjudicated, and whether intensity is collapsed into sign.
+
+## Major concern 7: pair sampling can create pseudo-replication
+
+The paper reports AUROC over structural pairs, but it needs to specify how many unique texts, how many pairs, and how pair dependence is handled. If one text appears in many pairs, pair-level confidence intervals will be misleadingly tight.
+
+**Actionable fix:** report:
+
+```text
+dimension:
+  corpus A examples: n_pos, n_neg, n_neutral_removed
+  corpus B examples: n_pos, n_neg, n_neutral_removed
+  train texts / validation texts / test texts
+  generated train pairs
+  generated eval pairs
+  unique anchors
+  unique positives
+  random seeds
+  bootstrap unit: text, not pair
+```
+
+Use **text-level bootstrap** or cluster-robust uncertainty, not naïve pair-level bootstrap.
+
+Also report PR-AUC if classes are imbalanced. AUROC can look stable under imbalance while the practical ranking quality is weak.
+
+## Theoretical critique
+
+The deontic theory is plausible and interesting, but it needs more careful wording.
+
+The claim that values and epistemic states are “largely universal” while deontic concepts are framework-relative is a useful hypothesis, but it is philosophically loaded. Autonomy, fairness, privacy, and environmental responsibility are also culturally and institutionally mediated. The paper’s own privacy result shows that the same named concept can either transfer or not depending on whether it is framed as exposure-harm or legal entitlement. That suggests the real axis may not be “deontic versus non-deontic,” but something like:
+
+> **conduct/harm-level labels transfer better than institutionally mediated entitlement labels.**
+
+That is possibly a stronger and more defensible theory than “deontic concepts transfer worst.”
+
+I would add this as an alternative hypothesis and test it.
+
+## Writing feedback
+
+The paper is readable and intellectually alive, but it sometimes argues harder than the evidence allows.
+
+Phrases to soften:
+
+| Current style                             | Safer version                                                            |
+| ----------------------------------------- | ------------------------------------------------------------------------ |
+| “predicts transferability”                | “is associated with transferability”                                     |
+| “provably non-lexical structure”          | “not explained by our lexical baselines”                                 |
+| “rights is not a method failure”          | “rights failure persists across four configurations”                     |
+| “values are largely universal”            | “these corpora appear to encode more transferable conduct-level signals” |
+| “deontic concepts are framework-relative” | “we hypothesize that deontic labels are more framework-relative”         |
+
+The introduction is good, but I would move the scorecard earlier and make the reader see the empirical surprise before the full method. The paper’s emotional arc should be:
+
+1. We tried to build nine moral encoders.
+2. Within-corpus results were misleading.
+3. Cross-corpus validation rescued eight and exposed one persistent failure.
+4. The failures were not random; they clustered in the deontic column.
+5. Here is the hypothesis and how to falsify it.
+
+That is a strong story.
+
+## Highest-priority experiments before submission
+
+Do these first:
+
+1. **Repeated seeds and confidence intervals** for all nine AUROCs and margins.
+2. **Generic moral-valence baseline** trained across all dimensions.
+3. **9×9 off-diagonal transfer matrix** to test dimension specificity.
+4. **Stronger lexical baseline**, especially supervised TF-IDF/logistic regression.
+5. **Leave-one-out and taxonomy-ablation analysis** for the column effect.
+6. **Human audit of LLM-labeled corpora**, especially CourtListener rights.
+7. **Within-jurisdiction rights control**, ideally US↔US or ECHR article-specific.
+8. **Qualitative error analysis** with examples of nearest neighbors, false positives, and false negatives.
+
+The most important are 2 and 3. Without them, the paper risks being interpreted as “some dimensions have clearer positive/negative valence than others,” not “moral structure predicts transfer.”
+
+## Suggested revised claim
+
+I would revise the central claim to:
+
+> We find preliminary evidence for a deontic transfer gap: in our cross-corpus validation regime, moral dimensions whose labels depend on institutional authority, entitlement, or legitimacy transfer substantially worse than dimensions framed as conduct-level harms, values, or epistemic states. The result is strongest as a hypothesis because the current evidence spans nine dimensions and is partly confounded by corpus availability.
+
+That version is still interesting, but much harder to attack.
+
+## Final assessment
+
+This is a strong draft because it has a real failure at its center and does not hide it. The `rights_respect` result is the hook. The 3×3 column hypothesis is the intellectual contribution. The cross-dataset validation regime is the methodological contribution.
+
+But the paper needs more controls before the headline can bear the weight. The biggest missing test is whether the encoders are learning **dimension-specific moral concepts** rather than **generic moral valence**. Add that, add uncertainty estimates, strengthen the baselines, and soften causal language. Then this could become a very good workshop or conference paper.

@@ -38,6 +38,10 @@ def main():
     ap.add_argument("--lambda", dest="lam", type=float, default=1.0)
     ap.add_argument("--holdout", type=float, default=0.12)
     ap.add_argument("--ckpt", default=None)
+    ap.add_argument("--base-model", dest="base_model", default="BAAI/bge-m3")
+    ap.add_argument("--pooling", default="mean", choices=["mean", "last"])
+    ap.add_argument("--trust-remote-code", dest="trust", action="store_true")
+    ap.add_argument("--max-len", dest="max_len", type=int, default=None)
     a = ap.parse_args()
 
     src = BUILDERS[a.dim](holdout_frac=a.holdout)
@@ -50,7 +54,13 @@ def main():
         flush=True,
     )
 
-    enc = BSEEncoder(base_model="BAAI/bge-m3", max_len=src.max_len, device="cuda")
+    enc = BSEEncoder(
+        base_model=a.base_model,
+        max_len=a.max_len or src.max_len,
+        device="cuda",
+        pooling=a.pooling,
+        trust_remote_code=a.trust,
+    )
 
     # baseline: untrained encoder's cross-dataset AUROC (the number the single-corpus model degraded to)
     base = gate(enc, src.heldout_eval())

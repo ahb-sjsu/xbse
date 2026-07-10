@@ -309,43 +309,133 @@ def build_environmental_joint(holdout_frac: float = 0.12) -> JointPairSource:
 
 
 # --------------------------------------------------------------- rights_respect
-def _echr_rows():
-    # ECHR (LexGLUE ecthr_a): facts + allegedly-violated article labels -> violation '-', none '+'
+# LexGLUE ecthr_a label index -> ECHR article. Strata group articles by the RIGHT they protect.
+ECHR_ARTICLE = {
+    0: "art2_life",
+    1: "art3_inhuman",
+    2: "art5_liberty",
+    3: "art6_fairtrial",
+    4: "art8_privacy",
+    5: "art9_religion",
+    6: "art10_expression",
+    7: "art11_assembly",
+    8: "art14_discrimination",
+    9: "p1_property",
+}
+# Physical-integrity stratum: life + inhuman treatment — the universal-human-rights core that maps
+# to US 4th/8th-Amendment excessive-force, and is legitimacy-INVARIANT (torture is wrong anywhere).
+ECHR_PHYSICAL_INTEGRITY = {0, 1}
+
+
+def _echr_rows(articles: set[int] | None = None):
+    """ECHR (LexGLUE ecthr_a) facts. If `articles` is given, restrict the '-' class to violations
+    of THOSE articles (a right-type stratum): '-' iff a listed article was violated, '+' iff no
+    article was (generic no-violation). Aggregating all articles mixes incommensurable rights
+    (fair-trial + torture + property), which is why the un-stratified rights joint could not learn.
+    """
     from datasets import load_dataset
 
     ds = load_dataset("coastalcph/lex_glue", "ecthr_a")
     rows = []
     for sp in ("train", "validation"):
         for r in ds[sp]:
+            labels = set(r["labels"])
+            if articles is not None:
+                hit = bool(labels & articles)
+                if labels and not hit:
+                    continue  # a violation, but of a DIFFERENT stratum — drop (keeps '-' coherent)
+                sign = "-" if hit else "+"
+            else:
+                sign = "-" if labels else "+"
             t = r["text"]
             txt = (" ".join(t) if isinstance(t, list) else str(t)).strip()[:800]
-            sign = "-" if len(r["labels"]) > 0 else "+"
             if len(txt) >= 25:
                 rows.append((txt, sign))
     return rows
 
 
-def _ethics_justice_rows():
-    # ETHICS justice: just/reasonable(1) -> '+', unjust(0) -> '-'
-    from datasets import load_dataset
+# Keywords that pick US civil-rights cases in the PHYSICAL-INTEGRITY stratum (excessive force,
+# bodily harm by the state) — the same right ECHR Art 2-3 protects.
+_FORCE_KW = (
+    "excessive force",
+    "use of force",
+    "deadly force",
+    "physical force",
+    "beaten",
+    "beating",
+    "assault",
+    "eighth amendment",
+    "cruel and unusual",
+    "taser",
+    "chokehold",
+    "strangl",
+    "punch",
+    "kick",
+    "baton",
+    "pepper spray",
+    "shot ",
+    "shooting",
+    "brutality",
+)
 
-    ds = load_dataset("hendrycks/ethics", "justice")
-    rows = []
-    for sp in ds:
-        for r in ds[sp]:
-            s = (r.get("scenario") or "").strip()
-            if len(s) >= 15:
-                rows.append((s, "+" if int(r["label"]) == 1 else "-"))
+
+def _courtlistener_force_rows():
+    return [
+        (t, s) for (t, s) in _courtlistener_rights_rows() if any(k in t.lower() for k in _FORCE_KW)
+    ]
+
+
+RIGHTS_CL = _data(
+    "rights_cl", "rights_cl_labeled.jsonl"
+)  # civil-rights case facts (violation-heavy)
+RIGHTS_CL_PLUS = _data(
+    "rights_cl", "rights_cl_plus.jsonl"
+)  # mined RIGHTS-RESPECTED holdings (+ class)
+
+
+def _courtlistener_rights_rows():
+    # Base facts corpus skews '-' (facts describe alleged violations); the '+'-mined file adds
+    # no-violation / qualified-immunity holdings so the RESPECTED class is not starved. Missing '+'
+    # file is tolerated (falls back to the base corpus) so the builder works before mining is run.
+    rows = _signed_jsonl(RIGHTS_CL, field="rights")
+    if os.path.exists(RIGHTS_CL_PLUS):
+        rows += _signed_jsonl(RIGHTS_CL_PLUS, field="rights")
     return rows
 
 
 def build_rights_joint(holdout_frac: float = 0.12) -> JointPairSource:
+    # Same-genre, cross-JURISDICTION pairing: European ECHR case-facts <-> US civil-rights case
+    # facts. The prior ECHR<->ETHICS-justice (legal <-> everyday-scenario) pairing failed (0.475,
+    # below baseline) because the two genres share no transferable structure; both corpora here are
+    # court case-facts describing how a person's rights were treated. The '+' class (rights RESPECTED)
+    # is under-sampled in rights litigation, so it is mined separately from no-violation holdings.
     return JointPairSource(
         name="rights_joint",
-        domains=[("echr", _echr_rows()), ("ethics_justice", _ethics_justice_rows())],
+        domains=[
+            ("echr", _echr_rows()),
+            ("courtlistener", _courtlistener_rights_rows()),
+        ],
         holdout_frac=holdout_frac,
-        invariant_structure="rights / just-treatment valence (violated vs respected), across ECHR cases and justice scenarios",
-        label_source="ECHR article-violation labels + ETHICS justice reasonableness",
+        invariant_structure="rights-violation valence, shared across European (ECHR) and US civil-rights case facts",
+        label_source="ECHR article-violation labels + dual-judge rights valence on US civil-rights case facts (+ mined no-violation holdings)",
+    )
+
+
+def build_rights_force_joint(holdout_frac: float = 0.12) -> JointPairSource:
+    # STRATIFIED rights (physical-integrity stratum): ECHR Art 2-3 (life / inhuman treatment) <->
+    # US excessive-force civil-rights. Both describe the SAME universal, legitimacy-invariant right
+    # (bodily integrity vs the state), so — unlike the aggregate rights joint that mixed fair-trial,
+    # property, expression and could not learn — the cross-corpus positives are semantically
+    # coherent. This tests whether rights transfers WITHIN a shared right-type stratum.
+    return JointPairSource(
+        name="rights_force_joint",
+        domains=[
+            ("echr_phys", _echr_rows(articles=ECHR_PHYSICAL_INTEGRITY)),
+            ("courtlistener_force", _courtlistener_force_rows()),
+        ],
+        holdout_frac=holdout_frac,
+        invariant_structure="physical-integrity rights valence (bodily harm by the state vs not), across ECHR Art 2-3 and US excessive-force cases",
+        label_source="ECHR Art 2-3 violation labels + dual-judge valence on US excessive-force civil-rights facts",
     )
 
 
@@ -353,6 +443,7 @@ _RAW_BUILDERS = {
     "privacy_joint": build_privacy_joint,
     "environmental_joint": build_environmental_joint,
     "rights_joint": build_rights_joint,
+    "rights_force_joint": build_rights_force_joint,
     "care_joint": lambda **k: build_foundation_joint("care", **k),
     "fairness_joint": lambda **k: build_foundation_joint("fairness", **k),
     "legitimacy_joint": lambda **k: build_foundation_joint("legitimacy", **k),
