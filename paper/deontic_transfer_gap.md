@@ -168,6 +168,10 @@ physical_harm    0.54   0.44  0.43  0.51  0.50  0.56  0.50  0.626 0.48
 rights           0.66   0.50  0.53  0.49  0.50  0.48  0.50  0.51  0.468
 ```
 
+(Matrix cells are training-time values from a separate eval run; per-cell differences from the §3.1
+scorecard — e.g. privacy 0.858 vs 0.853, epistemic 0.843 vs 0.817, care 0.825 vs 0.811 — are within
+the retrain/re-eval σ ≈ 0.03–0.05 quantified in §3.1, not distinct measurements.)
+
 Two groups fall out cleanly, split by **corpus independence, not by the taxonomy**:
 
 - **Specific** (diagonal-dominant, off-diagonals ~0.4–0.55): **privacy, environmental, autonomy,
@@ -232,7 +236,8 @@ per dimension:
   completely on the four independent-corpus dimensions. The collapse conclusion is robust:
   care/fairness/legitimacy/epistemic are **not four concepts but one** — a shared commonsense-moral
   valence — *when they share a corpus* (but §3.7: giving care and fairness independent corpora
-  **separates** them, so this is corpus-sharing, removable, not a fixed fact about the four concepts).
+  **decouples them at the corpus level**, so this is corpus-sharing, removable, not a fixed fact about
+  the four concepts).
 
   We are deliberately more cautious about the **mirror-image** claim — that the four
   independent-corpus dimensions are *concept*-distinct. Their low off-diagonals (§3.2) are confounded
@@ -487,8 +492,9 @@ after the shared-corpus confound is removed.
   autonomy 0.747→0.699, rights 0.475→0.502 — giving **σ ≈ 0.03–0.05** (§3.1). Applied to §3.7, the two
   *marginal* verdicts — the weakest decoupling (`care_v2↔fair_v2` gap +0.16) and the kept-shared
   control (−0.03) — sit within ~1–2 σ of their thresholds; the large cells (+0.28 to +0.32, and the
-  0.87→0.42 before/after) are safe at many σ. A 3-seed replication of the marginal cell firms it
-  (§3.7); "confirmed" rests on the large cells plus the intervention-with-control logic, not on +0.16.
+  0.87→0.42 before/after) are safe at many σ. A 3-seed replication of the marginal cell is **in
+  progress** (`scripts/run_v2_seeds.py`; seed 0 reproduces +0.16) and its mean ± sd will land in §3.7;
+  meanwhile "confirmed" rests on the large cells plus the intervention-with-control logic, not on +0.16.
 - **Dual-LLM-judge labels** (privacy, environmental, rights) may share bias; human audit needed
   (planned: ~100–200 items/slice, report human↔LLM agreement, not only LLM↔LLM).
 - **Rights confounds**: the stratified US-force slice was small (369); scarcity is not fully ruled
