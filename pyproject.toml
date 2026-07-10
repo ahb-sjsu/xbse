@@ -27,6 +27,11 @@ dependencies = [
     "scikit-learn>=1.3",
 ]
 
+[project.urls]
+Homepage = "https://github.com/ahb-sjsu/xbse"
+Repository = "https://github.com/ahb-sjsu/xbse"
+Issues = "https://github.com/ahb-sjsu/xbse/issues"
+
 [project.optional-dependencies]
 dev = ["pytest>=7", "ruff>=0.6", "black>=24.0", "ty>=0.0.1a1"]
 
