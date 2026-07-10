@@ -102,16 +102,22 @@ def gate(encoder, eval_data: dict, bar: Bar | dict | None = None) -> dict:
     only). Returns metrics + pass/fail + the bar's provenance, so a Report never contains a
     threshold without its derivation.
     """
+    from .baselines import bow_structure_auroc, lexical_margin
+
     b = _coerce_bar(bar)
     sp, fp = eval_data["structural_pairs"], eval_data["surface_pairs"]
     inv = surface_invariance(encoder, fp)  # reported diagnostic, NOT a gate
     fr = fuzz_ratio(encoder, sp, fp)
     au = structure_vs_surface_auroc(encoder, sp)
+    bow = bow_structure_auroc(sp)  # lexical control on the SAME held-out pairs
+    lex = lexical_margin(au, bow)  # encoder minus bag-of-words; small ⇒ the win is surface
     passed = (fr > b.fuzz_min) and (au > b.auroc_min)
     return {
         "structure_auroc": au,
         "fuzz_ratio": fr,
         "surface_invariance": inv,
+        "bow_auroc": bow,  # adversarial lexical baseline (defends against surface-leakage)
+        "lexical_margin": lex,
         "thresholds": b.as_thresholds(),
         "bar_source": b.source,
         "bar_derivation": b.derivation,

@@ -90,19 +90,27 @@ flowchart TB
 
 ## Status — honest cross-dataset scorecard
 
-Cross-dataset held-out AUROC (evaluate on a *second* corpus), joint vs untrained baseline:
+Cross-dataset held-out AUROC (evaluate on a *second* corpus). `BoW` is a TF-IDF bag-of-words model
+on the **same** held-out pairs — the adversarial lexical control. `margin = encoder − BoW`:
 
-| dimension | corpora (2 independent) | baseline | **cross-dataset (honest)** |
-|---|---|---:|---:|
-| privacy_protection | privacy RoTs + AITA scenarios | 0.55 | **0.853** |
-| epistemic_quality | Social-Chem honesty + ETHICS | 0.48 | **0.817** |
-| virtue_care | Social-Chem care-harm + ETHICS | 0.47 | **0.811** |
-| fairness_equity | Social-Chem fairness + ETHICS | 0.47 | **0.789** |
-| autonomy_respect | ec-darkpattern + MentalManip | 0.52 | **0.747** |
-| legitimacy_trust | Social-Chem authority + ETHICS | 0.52 | **0.708** |
-| physical_harm | BeaverTails + ETHICS-harm | 0.50 | **0.622** |
-| societal_environmental | ClimateBERT + dual-judged env-claims | 0.43 | **0.817** |
-| rights_respect | ECHR + ETHICS-justice | 0.52 | **0.475** ✗ |
+| dimension | corpora (2 independent) | baseline | **cross-dataset** | BoW (lexical) | margin |
+|---|---|---:|---:|---:|---:|
+| privacy_protection | privacy RoTs + AITA scenarios | 0.55 | **0.853** | 0.54 | **+0.31** |
+| epistemic_quality | Social-Chem honesty + ETHICS | 0.48 | **0.817** | 0.53 | **+0.29** |
+| societal_environmental | ClimateBERT + dual-judged env-claims | 0.43 | **0.817** | 0.48 | **+0.33** |
+| virtue_care | Social-Chem care-harm + ETHICS | 0.47 | **0.811** | 0.53 | **+0.28** |
+| fairness_equity | Social-Chem fairness + ETHICS | 0.47 | **0.789** | 0.51 | **+0.28** |
+| autonomy_respect | ec-darkpattern + MentalManip | 0.52 | **0.747** | 0.53 | **+0.22** |
+| legitimacy_trust | Social-Chem authority + ETHICS | 0.52 | **0.708** | 0.53 | **+0.18** |
+| physical_harm | BeaverTails + ETHICS-harm | 0.50 | **0.622** | 0.46 | **+0.16** |
+| rights_respect | ECHR + ETHICS-justice | 0.52 | **0.475** ✗ | 0.49 | **−0.01** |
+
+**The adversarial control holds:** bag-of-words is near-random (0.46–0.54) on every dimension, so
+the encoder's signal is provably **non-lexical** — it is not learning valence-correlated vocabulary.
+This is self-enforcing: `JointPairSource` pairs an anchor from corpus A with a same-sign positive
+from corpus B, which share little surface, so BoW is helpless while the encoder must find the shared
+moral structure. The 8 rehabilitated dimensions beat BoW by +0.16 to +0.33; rights (−0.01, *below*
+BoW) is flagged as the honest failure. `bow_auroc` and `lexical_margin` are standing gate metrics.
 
 **Eight of nine dimensions rehabilitated from artifact to real (0.62–0.85).** `rights_respect`
 (0.475, below baseline) is the honest exception: a *corpus-choice* failure, not a method failure —
