@@ -8,9 +8,20 @@ AUROC on the untrained encoder for reference, so the lift is visible.
 """
 
 import argparse
+import os
 import sys
 
-sys.path.insert(0, "/home/claude/xbse/src")
+# Prefer the installed package; fall back to the in-repo src/ (or $XBSE_SRC) for dev/remote runs.
+try:
+    import xbse  # noqa: F401
+except ImportError:
+    sys.path.insert(
+        0,
+        os.environ.get(
+            "XBSE_SRC",
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"),
+        ),
+    )
 
 from xbse.encoder import BSEEncoder
 from xbse.instances.joint_builders import BUILDERS

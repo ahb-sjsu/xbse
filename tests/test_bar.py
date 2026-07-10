@@ -43,6 +43,47 @@ def test_bar_is_frozen():
         b.auroc_min = 0.5  # loosening in place must not be possible
 
 
+def _rel(**kw):
+    base = dict(
+        auroc_min=0.6,
+        fuzz_min=1.0,
+        source="baseline-relative(0.1)",
+        derivation="beats untrained null + BoW null by >=0.1",
+        registered="2026-07-10",
+        policy="baseline_relative",
+        margin=0.1,
+        baseline_auroc=0.5,
+    )
+    base.update(kw)
+    return Bar(**base)
+
+
+def test_baseline_relative_requires_positive_margin():
+    with pytest.raises(BarError):
+        _rel(margin=0.0)
+
+
+def test_bad_policy_raises():
+    with pytest.raises(BarError):
+        _bar(policy="nonsense")
+
+
+def test_passes_baseline_relative_beats_both_nulls():
+    b = _rel(margin=0.1, baseline_auroc=0.5)
+    assert b.passes(0.80, 2.0, bow_auroc=0.60) is True  # +0.30 vs baseline, +0.20 vs BoW
+    assert b.passes(0.55, 2.0, bow_auroc=0.40) is False  # +0.05 vs baseline < 0.1
+    assert b.passes(0.80, 2.0, bow_auroc=0.75) is False  # +0.05 vs BoW < 0.1 (lexical win)
+    assert b.passes(0.80, 0.5, bow_auroc=0.60) is False  # fuzz fails
+
+
+def test_passes_nan_bow_drops_lexical_term_not_auto_pass():
+    b = _rel(margin=0.1, baseline_auroc=0.5)
+    assert b.passes(0.80, 2.0, bow_auroc=float("nan")) is True  # baseline still enforced
+    assert (
+        b.passes(0.55, 2.0, bow_auroc=float("nan")) is False
+    )  # baseline fails, nan bow can't save
+
+
 class _Src(PairSource):
     name = "barsrc"
 

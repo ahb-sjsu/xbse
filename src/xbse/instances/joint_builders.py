@@ -11,19 +11,41 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 
 from .joint import JointPairSource
 
 DEAD_BAND = 0.05
 
+# Corpus root — override with XBSE_DATA_ROOT. Defaults to the Atlas training-host location.
+_DATA_ROOT = os.environ.get("XBSE_DATA_ROOT", "/archive/ethics-corpora")
+
+
+def _data(*parts: str) -> str:
+    return os.path.join(_DATA_ROOT, *parts)
+
+
+def _open(path: str, **kw):
+    """open() with a friendly not-found error pointing at the data plan (portability)."""
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            f"xbse corpus not found: {path}\n"
+            f"  Set XBSE_DATA_ROOT to your corpus root, or fetch the corpora "
+            f"(see experiments/data_sourcing_plan.md)."
+        )
+    kw.setdefault("encoding", "utf-8")
+    kw.setdefault("errors", "replace")
+    return open(path, **kw)
+
+
 # ----------------------------------------------------------------------------- privacy
-PRIVACY_ROT = "/archive/ethics-corpora/privacy/privacy_labeled.jsonl"  # prescriptive RoTs
-PRIVACY_AITA = "/archive/ethics-corpora/privacy/aita_privacy_labeled.jsonl"  # lived scenarios
+PRIVACY_ROT = _data("privacy", "privacy_labeled.jsonl")  # prescriptive RoTs
+PRIVACY_AITA = _data("privacy", "aita_privacy_labeled.jsonl")  # lived scenarios
 
 
 def _signed_jsonl(path, field="privacy", db=DEAD_BAND):
     rows = []
-    with open(path, encoding="utf-8", errors="replace") as f:
+    with _open(path) as f:
         for line in f:
             try:
                 d = json.loads(line)
@@ -48,8 +70,8 @@ def build_privacy_joint(holdout_frac: float = 0.1) -> JointPairSource:
 
 
 # ----------------------------------------------------------------------- moral foundations
-SOCIAL_CHEM = "/archive/ethics-corpora/social-chem-101/social-chem-101/social-chem-101.v1.0.tsv"
-ETHICS_CS = "/archive/ethics-corpora/ethics/commonsense.jsonl"
+SOCIAL_CHEM = _data("social-chem-101", "social-chem-101", "social-chem-101.v1.0.tsv")
+ETHICS_CS = _data("ethics", "commonsense.jsonl")
 
 # (rot-category substring in Social-Chem, keyword set for ETHICS commonsense)
 FOUNDATIONS = {
@@ -137,7 +159,7 @@ def _sc_sign(v):
 
 def _social_chem_rows(category, keywords):
     rows = []
-    with open(SOCIAL_CHEM, newline="", encoding="utf-8", errors="replace") as f:
+    with _open(SOCIAL_CHEM, newline="") as f:
         for row in csv.DictReader(f, delimiter="\t"):
             try:
                 if int(row.get("rot-agree") or 0) < 3:
@@ -161,7 +183,7 @@ def _social_chem_rows(category, keywords):
 def _ethics_rows(keywords):
     # ETHICS commonsense: label 1 = morally WRONG -> '-'; label 0 = OK -> '+'
     rows = []
-    with open(ETHICS_CS, encoding="utf-8", errors="replace") as f:
+    with _open(ETHICS_CS) as f:
         for line in f:
             try:
                 d = json.loads(line)
@@ -254,7 +276,7 @@ def build_autonomy_joint(holdout_frac: float = 0.1) -> JointPairSource:
 
 
 # --------------------------------------------------------------- environmental
-ENV_LABELED = "/archive/ethics-corpora/environmental/env_labeled.jsonl"  # dual-judge {text, env}
+ENV_LABELED = _data("environmental", "env_labeled.jsonl")  # dual-judge {text, env}
 
 
 def _climate_sentiment_rows():
@@ -327,7 +349,7 @@ def build_rights_joint(holdout_frac: float = 0.12) -> JointPairSource:
     )
 
 
-BUILDERS = {
+_RAW_BUILDERS = {
     "privacy_joint": build_privacy_joint,
     "environmental_joint": build_environmental_joint,
     "rights_joint": build_rights_joint,
@@ -338,3 +360,58 @@ BUILDERS = {
     "physharm_joint": build_physharm_joint,
     "autonomy_joint": build_autonomy_joint,
 }
+
+# --------------------------------------------------------------- pre-registered validation bars
+# POLICY (chosen 2026-07-10, before the validation re-gate): a feeder is VALIDATED iff its
+# cross-dataset held-out AUROC beats BOTH nulls — the untrained-encoder baseline AND the TF-IDF
+# bag-of-words control — by >= MARGIN on the same held-out pairs. This tests the exact claim a
+# cross-dataset feeder makes (real, non-lexical, transferable structure beyond the nulls) and is
+# immune to the within-vs-cross ceiling mismatch that made the label-noise ceiling unfair. The two
+# nulls are properties of (untrained model + corpus), independent of the trained feeder. Rejected
+# the strict 0.9x-noise-ceiling policy because it compares a cross-corpus AUROC to a within-corpus
+# ceiling. This block is the pre-registration record; a bar may be tightened, never loosened.
+_MARGIN = 0.10
+_BASELINE_NULL = {  # untrained-encoder cross-dataset AUROC, measured before training the feeder
+    "privacy_joint": 0.551,
+    "care_joint": 0.469,
+    "fairness_joint": 0.474,
+    "legitimacy_joint": 0.523,
+    "epistemic_joint": 0.483,
+    "physharm_joint": 0.499,
+    "autonomy_joint": 0.515,
+    "environmental_joint": 0.426,
+    "rights_joint": 0.517,
+}
+
+
+def _prereg_bar(name: str):
+    from ..bar import Bar
+
+    b = _BASELINE_NULL[name]
+    return Bar(
+        auroc_min=round(b + _MARGIN, 3),  # absolute reference floor = baseline + margin
+        fuzz_min=1.0,
+        policy="baseline_relative",
+        margin=_MARGIN,
+        baseline_auroc=b,
+        source=f"baseline-relative(margin {_MARGIN}) over untrained null {b} + BoW null",
+        derivation=(
+            f"VALIDATED iff cross-dataset held-out AUROC beats BOTH the untrained-encoder null "
+            f"({b}) and the TF-IDF bag-of-words null by >= {_MARGIN} on the same held-out pairs; "
+            f"nulls are properties of (untrained model + corpus), independent of the trained feeder."
+        ),
+        registered="2026-07-10",
+    )
+
+
+def _attach_bar(name: str, builder):
+    def build(**k):
+        src = builder(**k)
+        if src.bar is None and name in _BASELINE_NULL:
+            src.bar = _prereg_bar(name)
+        return src
+
+    return build
+
+
+BUILDERS = {name: _attach_bar(name, fn) for name, fn in _RAW_BUILDERS.items()}

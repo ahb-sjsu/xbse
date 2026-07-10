@@ -18,3 +18,6 @@ wandb/
 .pytest_cache/
 .ruff_cache/
 .DS_Store
+
+# applied review patches (kept as docs/review-*.txt)
+*.patch

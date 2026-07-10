@@ -111,7 +111,7 @@ def gate(encoder, eval_data: dict, bar: Bar | dict | None = None) -> dict:
     au = structure_vs_surface_auroc(encoder, sp)
     bow = bow_structure_auroc(sp)  # lexical control on the SAME held-out pairs
     lex = lexical_margin(au, bow)  # encoder minus bag-of-words; small ⇒ the win is surface
-    passed = (fr > b.fuzz_min) and (au > b.auroc_min)
+    passed = b.passes(au, fr, bow)  # policy-aware: absolute floor OR beats both nulls by margin
     return {
         "structure_auroc": au,
         "fuzz_ratio": fr,
