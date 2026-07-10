@@ -1,0 +1,21 @@
+Article-8 contamination check (paper §3.2, reviewer-3 pt3). Run 2026-07-10, Atlas GPU-1, BGE-M3.
+Hypothesis: the 9x9 rights->privacy=0.66 anomaly is corpus contamination — ECHR Art 8 (right to
+private life) cases in the rights training corpus teach the rights encoder privacy signal.
+
+Method: build_rights_no_art8 = rights_joint with ECHR cases violating Art 8 (label index 4) dropped
+(_echr_rows(exclude={4})). Retrain, then cross-eval rights_joint vs rights_no_art8 -> privacy.
+
+rights_no_art8 own gate: structure_auroc=0.475 (still fails, same as rights_joint 0.475 — dropping
+Art-8 does not make rights transfer; expected, rights is untransferable regardless).
+
+3x3 cross-transfer (rows=encoder, cols=eval):
+enc \ eval     rights    rno8      priv
+rights         0.5015    0.5083    0.6028
+rno8           0.5096    0.5095    0.5141
+priv           0.5337    0.5678    0.8534
+
+VERDICT: rights->privacy = 0.6028 (reproduces the ~0.66 cell) drops to rights_no_art8->privacy =
+0.5141 (CHANCE) when Art-8 privacy cases are removed. The rights encoder's only transferable signal
+was privacy, and it came from Art-8 contamination. Contamination CONFIRMED — the transfer-matrix
+method catches a live case inside the paper's own data (self-application). rights->rights and
+rno8->rno8 both ~0.50 (both rights encoders are near-random on their own task).

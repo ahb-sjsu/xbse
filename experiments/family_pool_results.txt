@@ -1,0 +1,15 @@
+Family-pool baseline reproduction (paper §3.3). scripts/family_pool.py, Atlas GPU-1, BGE-M3, 2026-07-10.
+Pool trained fresh on pooled care+fairness+legitimacy+epistemic valence (Social-Chem + ETHICS);
+evaluated on each family dim's held-out pairs vs its dedicated encoder. Leakage control: held-out
+anchors that were in the pool's TRAIN split are dropped (n_clean shown).
+
+dimension      dedicated  family-pool     gap     n_clean/n
+care               0.787        0.900  +0.113      108/1200
+fairness           0.785        0.941  +0.156      132/1200
+legitimacy         0.734        0.868  +0.134      150/1200
+epistemic          0.836        0.957  +0.121      168/1200
+
+VERDICT: a single pooled-family-valence encoder MATCHES-OR-BEATS every dedicated family encoder on its
+own dimension (all gaps positive here, on leakage-filtered pairs) -> the four are one shared valence,
+reproducing §3.3. Caveat: n_clean is small (108-168) because the leakage filter removes pool-train
+anchors, so the exact gap is noisy; the direction (pool >= dedicated) is the robust reproduction.

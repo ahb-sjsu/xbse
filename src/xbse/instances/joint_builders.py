@@ -212,6 +212,63 @@ def build_foundation_joint(name: str, holdout_frac: float = 0.1) -> JointPairSou
     )
 
 
+# ------------------------------------------ v2 independent-corpus feeders (prereg experiment)
+# Replace the shared ETHICS second corpus with a DIFFERENT-provenance signed corpus, keeping
+# Social-Chem as the first corpus, so the change is isolated. Tests whether corpus independence
+# separates the collapsed family (see experiments/prereg_independent_corpora.md).
+MS_CARE = _data("moral_stories", "care_signed.jsonl")  # Moral-Stories care-norm actions (+moral/-immoral)
+MHS_FAIR = _data("mhs", "mhs_fairness.jsonl")  # Measuring Hate Speech (score>0.5 -> '-', <-1 -> '+')
+
+
+def _signed_jsonl_simple(path, cap=None):
+    """Read {'text','sign'} jsonl -> [(text, sign)]; optional deterministic down-sample to cap."""
+    rows = []
+    with _open(path) as f:
+        for line in f:
+            try:
+                d = json.loads(line)
+            except (ValueError, TypeError):
+                continue
+            t = (d.get("text") or "").strip()
+            s = d.get("sign")
+            if len(t) >= 12 and s in ("+", "-"):
+                rows.append((t, s))
+    if cap and len(rows) > cap:
+        import random
+
+        random.Random(0).shuffle(rows)
+        rows = rows[:cap]
+    return rows
+
+
+def build_care_v2(holdout_frac: float = 0.1) -> JointPairSource:
+    """care with an INDEPENDENT second corpus (Moral-Stories care actions) replacing ETHICS."""
+    return JointPairSource(
+        name="care_v2_joint",
+        domains=[
+            ("socialchem", _social_chem_rows("care-harm", FOUNDATIONS["care"][1])),
+            ("moralstories", _signed_jsonl_simple(MS_CARE)),
+        ],
+        holdout_frac=holdout_frac,
+        invariant_structure="care valence, shared across RoTs and Moral-Stories action narratives",
+        label_source="Social-Chem care-harm sign + Moral-Stories moral/immoral action (text-independent)",
+    )
+
+
+def build_fairness_v2(holdout_frac: float = 0.1) -> JointPairSource:
+    """fairness with an INDEPENDENT second corpus (Measuring Hate Speech) replacing ETHICS."""
+    return JointPairSource(
+        name="fairness_v2_joint",
+        domains=[
+            ("socialchem", _social_chem_rows("fairness-cheating", FOUNDATIONS["fairness"][1])),
+            ("mhs", _signed_jsonl_simple(MHS_FAIR, cap=12000)),
+        ],
+        holdout_frac=holdout_frac,
+        invariant_structure="fairness valence, shared across RoTs and hate-speech comments",
+        label_source="Social-Chem fairness-cheating sign + Measuring-Hate-Speech score (independent)",
+    )
+
+
 # --------------------------------------------------------------- physical_harm & autonomy
 # Both reuse existing single-corpus loaders (BeaverTails / MentalManip are already HF-cached on
 # Atlas; darkpattern reads a local tsv). Convention: violation label 1 -> '-', upheld 0 -> '+'.
@@ -327,11 +384,15 @@ ECHR_ARTICLE = {
 ECHR_PHYSICAL_INTEGRITY = {0, 1}
 
 
-def _echr_rows(articles: set[int] | None = None):
+def _echr_rows(articles: set[int] | None = None, exclude: set[int] | None = None):
     """ECHR (LexGLUE ecthr_a) facts. If `articles` is given, restrict the '-' class to violations
     of THOSE articles (a right-type stratum): '-' iff a listed article was violated, '+' iff no
     article was (generic no-violation). Aggregating all articles mixes incommensurable rights
     (fair-trial + torture + property), which is why the un-stratified rights joint could not learn.
+
+    `exclude` drops any case whose violated articles intersect the set (e.g. {4} = Art-8 right to
+    private life) — used for the rights→privacy contamination check (reviewer-3 point 3): Art-8 IS
+    privacy, so its presence in the rights corpus contaminates a rights encoder with privacy signal.
     """
     from datasets import load_dataset
 
@@ -340,6 +401,8 @@ def _echr_rows(articles: set[int] | None = None):
     for sp in ("train", "validation"):
         for r in ds[sp]:
             labels = set(r["labels"])
+            if exclude is not None and (labels & exclude):
+                continue  # drop cases violating an excluded article (e.g. Art-8 privacy)
             if articles is not None:
                 hit = bool(labels & articles)
                 if labels and not hit:
@@ -421,6 +484,22 @@ def build_rights_joint(holdout_frac: float = 0.12) -> JointPairSource:
     )
 
 
+def build_rights_no_art8(holdout_frac: float = 0.12) -> JointPairSource:
+    """rights_joint with ECHR Art-8 (right to private life) cases REMOVED — the contamination check
+    of reviewer-3 point 3. Art-8 IS privacy; if rights→privacy=0.66 in the 9×9 is corpus
+    contamination, removing Art-8 from rights training should shrink it."""
+    return JointPairSource(
+        name="rights_no_art8_joint",
+        domains=[
+            ("echr", _echr_rows(exclude={4})),  # 4 = art8_privacy
+            ("courtlistener", _courtlistener_rights_rows()),
+        ],
+        holdout_frac=holdout_frac,
+        invariant_structure="rights-violation valence with Art-8 privacy cases excluded",
+        label_source="ECHR article-violation labels (Art-8 dropped) + dual-judge US civil-rights valence",
+    )
+
+
 def build_rights_force_joint(holdout_frac: float = 0.12) -> JointPairSource:
     # STRATIFIED rights (physical-integrity stratum): ECHR Art 2-3 (life / inhuman treatment) <->
     # US excessive-force civil-rights. Both describe the SAME universal, legitimacy-invariant right
@@ -450,6 +529,9 @@ _RAW_BUILDERS = {
     "epistemic_joint": lambda **k: build_foundation_joint("epistemic", **k),
     "physharm_joint": build_physharm_joint,
     "autonomy_joint": build_autonomy_joint,
+    "care_v2_joint": build_care_v2,
+    "fairness_v2_joint": build_fairness_v2,
+    "rights_no_art8_joint": build_rights_no_art8,
 }
 
 # --------------------------------------------------------------- pre-registered validation bars

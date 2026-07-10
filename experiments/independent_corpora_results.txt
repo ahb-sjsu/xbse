@@ -1,0 +1,38 @@
+Pre-registered independent-corpora experiment (experiments/prereg_independent_corpora.md).
+Run 2026-07-10, Atlas GPU-1, BGE-M3 mean-pool. Answers paper §7 Q1 / §3.7.
+
+MANIPULATION-CHECK GATE (prereg pt4 — must pass before scoring the transfer prediction):
+  care_v2_joint      TRAINED structure_auroc=0.8392  null=0.5763  bow=0.5107  margin=+0.2628  GATE=PASS
+  fairness_v2_joint  TRAINED structure_auroc=0.9117  null=0.5745  bow=0.4948  margin=+0.3372  GATE=PASS
+Both re-corpused encoders pass their own cross-dataset gate -> the transfer prediction is scorable
+(not "inconclusive - corpus quality").
+
+4x4 FAMILY CROSS-TRANSFER (rows=encoder, cols=eval). care/fairness given INDEPENDENT corpora
+(Moral-Stories care actions; Measuring Hate Speech). legitimacy/epistemic keep the original
+Social-Chem<->ETHICS pairing = internal control.
+
+enc \ eval     care_v2   fair_v2     legit      epis
+care_v2        0.8392    0.7012    0.4324    0.4226
+fair_v2        0.6581    0.9117    0.4376    0.4928
+legit          0.6104    0.5626    0.7069    0.7889
+epis           0.5525    0.5634    0.6932    0.8106
+
+mean diagonal (within)    = 0.8171
+mean off-diagonal (cross) = 0.5763
+overall separation gap    = 0.2408
+
+per-pair (symmetric cross vs min within; gap>=0.10 => distinct):
+  care_v2 <-> fair_v2  cross=0.6797  gap=+0.1595  distinct
+  care_v2 <-> legit    cross=0.5214  gap=+0.1855  distinct
+  care_v2 <-> epis     cross=0.4876  gap=+0.3230  distinct
+  fair_v2 <-> legit    cross=0.5001  gap=+0.2068  distinct
+  fair_v2 <-> epis     cross=0.5281  gap=+0.2825  distinct
+  legit   <-> epis     cross=0.7411  gap=-0.0341  COLLAPSED (still shared corpus = internal control)
+
+VERDICT: pre-registered prediction CONFIRMED. The two dims given independent corpora decouple from
+everything (gaps +0.16..+0.32, diagonal-dominance emerges); the two that kept the shared corpus stay
+collapsed (-0.03). Before/after: care->epistemic 0.871->0.423, care->legitimacy 0.74->0.432 (to
+chance). The ~5-axis collapse is a property of CORPUS-SHARING, not the moral space. Implication 1
+vindicated; falsifier did not occur.
+CAVEAT: care corpus (Moral-Stories) is partial-independence (norms are a Social-Chem subset; only its
+narrative text is independent). Fairness (Measuring Hate Speech) is the clean flagship; both agree.

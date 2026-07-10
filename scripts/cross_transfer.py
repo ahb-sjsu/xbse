@@ -73,7 +73,7 @@ for enc_short, _name, ckpt in PAIRS:
     del enc
     torch.cuda.empty_cache()
 
-print("\n=== N x N CROSS-TRANSFER MATRIX (gte-Qwen2)  rows=encoder, cols=eval ===", flush=True)
+print(f"\n=== N x N CROSS-TRANSFER MATRIX ({BASE})  rows=encoder, cols=eval ===", flush=True)
 hdr = "enc \\ eval  " + "".join(f"{c:>10}" for c in LABELS)
 print(hdr)
 for r in LABELS:

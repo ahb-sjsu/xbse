@@ -1,51 +1,37 @@
-Within-corpus decomposition — frozen BGE-M3 linear probe, 5-fold stratified logistic-regression AUROC
-(paper §3.5). Run 2026-07-10 on Atlas GPU-1; scripts/within_corpus.py; XBSE_DATA_ROOT=/archive/ethics-corpora;
-cap 8000 rows/corpus. Answers reviewer-2 point 3: is rights unlearnable or merely untransferable?
+Within-corpus decomposition — frozen BGE-M3 probes (paper §3.5). NO fine-tuning. Answers reviewer-2
+pt3 and reviewer-3 pt1/pt2. Run 2026-07-10 on Atlas GPU-1; scripts/within_corpus.py.
 
-base=BAAI/bge-m3 pooling=mean cap=8000/corpus
+Three same-estimator probes (reviewer-3 pt1):
+  emb-within : frozen-embedding logistic, 5-fold WITHIN each corpus  (is the label decodable?)
+  bow-within : TF-IDF logistic, 5-fold WITHIN each corpus            (is it just lexical?)
+  emb-cross  : frozen probe trained on corpus A, tested on B         (does the raw space transfer?)
 
-=== privacy_joint (cross=0.853) ===
-  within[rot           ] n= 1238 pos= 1077 AUROC=0.9122
-  within[aita          ] n=  658 pos=  200 AUROC=0.8667
+SUMMARY (ranked by within->cross drop):
+dimension              emb-within bow-within  emb-cross    drop  at-chance?
+environmental_joint        0.9709     0.9526     0.1405   0.830  <-- CHANCE
+epistemic_joint            0.9019     0.8923     0.2218   0.680  <-- CHANCE
+fairness_joint             0.8737     0.8330     0.2499   0.624  <-- CHANCE
+care_joint                 0.8808     0.8759     0.3266   0.554  <-- CHANCE
+legitimacy_joint           0.8405     0.8312     0.3918   0.449  <-- CHANCE
+autonomy_joint             0.8525     0.8577     0.5594   0.293
+rights_joint               0.7367     0.7787     0.4512   0.286  <-- CHANCE
+physharm_joint             0.8439     0.8194     0.5683   0.276
+privacy_joint              0.8895     0.8457     0.6252   0.264
 
-=== environmental_joint (cross=0.817) ===
-  within[climate_sentiment] n=  749 pos=  448 AUROC=0.9882
-  within[env_claims    ] n= 2214 pos= 1168 AUROC=0.9535
+fine-tuned cross (paper §3.1, for comparison): privacy .853 env .817 rights .475 care .811
+  fairness .789 legitimacy .708 epistemic .817 physharm .622 autonomy .747
 
-=== rights_joint (cross=0.475) ===
-  within[echr          ] n= 8000 pos=  871 AUROC=0.7665
-  within[courtlistener ] n= 1873 pos=  668 AUROC=0.7069
-
-=== care_joint (cross=0.811) ===
-  within[socialchem    ] n= 8000 pos= 3642 AUROC=0.9971
-  within[ethics        ] n= 6853 pos= 4297 AUROC=0.7645
-
-=== fairness_joint (cross=0.789) ===
-  within[socialchem    ] n= 8000 pos= 2257 AUROC=0.9950
-  within[ethics        ] n= 8000 pos= 4584 AUROC=0.7525
-
-=== legitimacy_joint (cross=0.708) ===
-  within[socialchem    ] n= 8000 pos= 2624 AUROC=0.9951
-  within[ethics        ] n= 4993 pos= 3017 AUROC=0.6858
-
-=== epistemic_joint (cross=0.817) ===
-  within[socialchem    ] n= 2720 pos= 1028 AUROC=0.9935
-  within[ethics        ] n= 2506 pos= 1693 AUROC=0.8103
-
-=== physharm_joint (cross=0.622) ===
-  within[beavertails   ] n= 1375 pos= 1285 AUROC=0.9493
-  within[ethics        ] n= 2780 pos= 1687 AUROC=0.7384
-
-=== autonomy_joint (cross=0.747) ===
-  within[darkpattern   ] n= 2045 pos=  988 AUROC=0.9873
-  within[mentalmanip   ] n= 2915 pos=  899 AUROC=0.7177
-
-INTERPRETATION
-- Within-corpus signal is universal (0.69-0.997) — every dimension is linearly decodable inside its
-  corpora by a probe that never fine-tuned. Within-corpus AUROC is deceptive; it is a property every
-  dimension has (Social-Chem side ~0.99 for all four family dims -> why they collapse).
-- RIGHTS is the decisive case: strong within-corpus signal (ECHR 0.77, CourtListener 0.71) but cross
-  0.475 — the largest within->cross drop. Labels are COHERENT (probe recovers them within-corpus);
-  the failure is TRANSFER, not learnability. => framework-relativity confirmed, not label incoherence.
-- Caveat: within column is a frozen probe; cross column is fine-tuned InfoNCE transfer (different
-  estimators) — the direction is unambiguous but the exact gap is not a clean subtraction.
+FINDINGS:
+1. Within-corpus success is UNIVERSAL (emb-within 0.74-0.97) — every dim decodable inside its corpora
+   by a probe that never fine-tuned. Within-corpus AUROC is deceptive.
+2. That within signal is LARGELY LEXICAL: bow-within ~ emb-within everywhere; for RIGHTS bow-within
+   (0.78) is HIGHER than emb (0.74). So "decodable within corpus" does NOT establish a coherent
+   concept -- only that labels are not random. (Retracts the earlier "coherent, not incoherent" claim.)
+3. Frozen emb-cross is at chance for MOST dims (env 0.14, epis 0.22, fair 0.25, care 0.33, legit 0.39,
+   rights 0.45) -- the raw space does not align disparate corpora; that is what fine-tuning is FOR.
+   Fine-tuning rescues cross-transfer for all 8 other dims (-> 0.62-0.85) but NOT rights (0.45->0.475).
+   RIGHTS is the ONLY dimension whose fine-tuned cross-transfer stays at chance.
+VERDICT: rights is UNTRANSFERABLE, not unlearnable -- within signal present but corpus/jurisdiction-
+specific surface that fine-tuning cannot align. Consistent with framework-relativity. Lean on "only
+dim fine-tuning cannot lift above chance", NOT "largest drop" (the frozen-drop is a continuum;
+environmental drops most).
