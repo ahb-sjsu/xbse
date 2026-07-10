@@ -1,7 +1,16 @@
 """The shared validation gate — the whole point of the framework.
 
-Every *-BSE clears the SAME bar, so no instance can grade itself easier than another. A good
-embedding must:
+Every *-BSE clears the SAME gate MECHANISM; the bar it clears is a per-instance, PRE-REGISTERED
+`Bar` that carries its own derivation (see `xbse.bar`). "Same bar for everyone" was the right
+instinct against self-grading, but a single number imported from citation retrieval was the wrong
+implementation: it made the AUROC half unpassable for noisy-label valence dimensions while the
+weak surface pairs made the fuzz half vacuous. What is shared and non-negotiable now is:
+  - the METRICS (structure AUROC, fuzz ratio, surface invariance diagnostic),
+  - the REQUIREMENT that the bar be derived from corpus properties (label-noise ceiling,
+    baseline lift) and registered before training — never loosened after a run,
+  - the HARD STOP semantics.
+
+A good embedding must:
   1. keep surface-only variants NEAR       (surface_invariance -> 1)
   2. push different-structure items APART   (structural separation large)
   3. therefore move MORE for structure than for surface   (fuzz_ratio > 1)
@@ -17,22 +26,40 @@ from __future__ import annotations
 
 import numpy as np
 
-# The bar every instance must clear is the SAME one LeBSE already cleared. Pulled from
-# ahb-sjsu/lebse (MODEL_CARD.md / PAPER.md): LeBSE validates on held-out citation-retrieval
-# AUROC = 0.971 (base LaBSE 0.765) — i.e. a RELATIVE structure-vs-random separation, NOT an
-# absolute surface-invariance floor. So the gate is AUROC + fuzz-ratio; surface_invariance is
-# reported as a diagnostic but does NOT gate (an absolute-cosine floor is in tension with hard
-# surface pairs like title<->abstract, where perfect relative separation can coexist with
-# moderate absolute closeness — SciBSE: AUROC 0.999, surface_inv 0.666).
-LEBSE_BAR = {
-    "fuzz_min": 1.0,  # structure must move z more than surface
-    "auroc_min": 0.97,  # LeBSE's real held-out citation-retrieval AUROC (0.971)
-}
+from .bar import LEBSE_LEGACY_BAR, Bar
+
+# Backward-compat alias: LEBSE_BAR used to be a plain dict and the universal default. It is now
+# the legacy Bar object, apt only for retrieval-style structure (SciBSE / LeBSE). gate() accepts
+# either a Bar or the old {"fuzz_min", "auroc_min"} dict.
+LEBSE_BAR = LEBSE_LEGACY_BAR
+
+
+def _coerce_bar(bar) -> Bar:
+    """Accept a Bar, a legacy dict, or None (-> legacy LeBSE bar)."""
+    if bar is None:
+        return LEBSE_LEGACY_BAR
+    if isinstance(bar, Bar):
+        return bar
+    return Bar(
+        auroc_min=float(bar["auroc_min"]),
+        fuzz_min=float(bar["fuzz_min"]),
+        source=str(bar.get("source", "ad-hoc dict bar")),
+        derivation=str(bar.get("derivation", "legacy dict-style bar; no derivation recorded")),
+    )
+
+
+def _to_np(x) -> np.ndarray:
+    """Torch tensor or ndarray -> float32 ndarray (lets the gate run on torch-free encoders)."""
+    return (
+        x.detach().cpu().numpy().astype("float32")
+        if hasattr(x, "detach")
+        else np.asarray(x, dtype="float32")
+    )
 
 
 def _sim(encoder, a: list[str], b: list[str]) -> np.ndarray:
-    za, zb = encoder.encode(a), encoder.encode(b)
-    return (za * zb).sum(-1).float().cpu().numpy()  # cosine sim (embeddings are L2-normed)
+    za, zb = _to_np(encoder.encode(a)), _to_np(encoder.encode(b))
+    return (za * zb).sum(-1)  # cosine sim (embeddings are L2-normed)
 
 
 def surface_invariance(encoder, surface_pairs) -> float:
@@ -67,25 +94,31 @@ def structure_vs_surface_auroc(encoder, structural_pairs) -> float:
     return float(roc_auc_score(y, sim))
 
 
-def gate(encoder, eval_data: dict, bar: dict | None = None) -> dict:
-    """Run the full gate on a PairSource.heldout_eval() dict against the LeBSE bar (the SAME bar
-    every instance clears — pass a different `bar` only to tighten it). Returns metrics + pass/fail.
+def gate(encoder, eval_data: dict, bar: Bar | dict | None = None) -> dict:
+    """Run the full gate on a PairSource.heldout_eval() dict against a pre-registered Bar.
+
+    Pass the instance's own Bar (PairSource.resolve_bar()). A dict is accepted for backward
+    compatibility; None falls back to the legacy LeBSE bar (apt for retrieval-style structure
+    only). Returns metrics + pass/fail + the bar's provenance, so a Report never contains a
+    threshold without its derivation.
     """
-    bar = bar or LEBSE_BAR
-    fuzz_min, auroc_min = bar["fuzz_min"], bar["auroc_min"]
+    b = _coerce_bar(bar)
     sp, fp = eval_data["structural_pairs"], eval_data["surface_pairs"]
     inv = surface_invariance(encoder, fp)  # reported diagnostic, NOT a gate
     fr = fuzz_ratio(encoder, sp, fp)
     au = structure_vs_surface_auroc(encoder, sp)
-    passed = (fr > fuzz_min) and (au > auroc_min)  # LeBSE's real criterion: relative AUROC + fuzz
+    passed = (fr > b.fuzz_min) and (au > b.auroc_min)
     return {
         "structure_auroc": au,
         "fuzz_ratio": fr,
         "surface_invariance": inv,
-        "thresholds": {"auroc>": auroc_min, "fuzz>": fuzz_min},
+        "thresholds": b.as_thresholds(),
+        "bar_source": b.source,
+        "bar_derivation": b.derivation,
+        "bar_registered": b.registered,
         "passed": bool(passed),
         "verdict": (
-            "VALIDATED — clears the LeBSE bar (AUROC + fuzz); earn the next tool"
+            f"VALIDATED — clears the pre-registered bar [{b.source}]; earn the next tool"
             if passed
             else "FAILED GATE — no downstream tools, no claims; iterate the encoder"
         ),

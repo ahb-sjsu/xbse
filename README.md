@@ -101,15 +101,27 @@ Cross-dataset held-out AUROC (evaluate on a *second* corpus), joint vs untrained
 | autonomy_respect | ec-darkpattern + MentalManip | 0.52 | **0.747** |
 | legitimacy_trust | Social-Chem authority + ETHICS | 0.52 | **0.708** |
 | physical_harm | BeaverTails + ETHICS-harm | 0.50 | **0.622** |
-| societal_environmental | ClimateBERT + dual-judged env-claims | 0.43 | *training* |
-| rights_respect | ECHR + ETHICS-justice | — | *training* |
+| societal_environmental | ClimateBERT + dual-judged env-claims | 0.43 | **0.817** |
+| rights_respect | ECHR + ETHICS-justice | 0.52 | **0.475** ✗ |
 
-**Seven of nine dimensions rehabilitated from artifact to real (0.62–0.85).** Lessons banked:
-(i) **within-dataset AUROC is not evidence of a real dimension** — always cross-test; (ii) the
-load-bearing fix is **cross-corpus same-sign positives**, not the adversary (which only de-confounds
-when the two corpora are surface-similar); (iii) `physical_harm` (0.622) is weakest — the widest
-genre gap (QA-pairs vs scenarios) — and the CourtListener criminal-case route (injury-tier labels)
-is its planned third corpus. Full roadmap: `experiments/data_sourcing_plan.md`.
+**Eight of nine dimensions rehabilitated from artifact to real (0.62–0.85).** `rights_respect`
+(0.475, below baseline) is the honest exception: a *corpus-choice* failure, not a method failure —
+ECHR European case-facts and everyday ETHICS-justice scenarios share no transferable structure. The
+fix is a better second corpus (US civil-rights via CourtListener), not a different method. Lessons
+banked: (i) **within-dataset AUROC is not evidence of a real dimension** — always cross-test;
+(ii) the load-bearing fix is **cross-corpus same-sign positives**, not the adversary (which only
+de-confounds when the two corpora are surface-similar); (iii) `physical_harm` (0.622) is weakest —
+the widest genre gap (QA-pairs vs scenarios). Full roadmap: `experiments/data_sourcing_plan.md`.
+
+**These AUROCs are pass/fail against a per-dimension, pre-registered `Bar`** (`xbse.bar`), *not* a
+universal 0.97. The old single bar was imported from LeBSE's citation-retrieval task and is
+unreachable for cross-corpus moral valence built on noisy human labels — keeping it would make the
+gate report "nothing validated" while the scorecard says otherwise. Each dimension's bar is instead
+**derived from that corpus's label noise** (the maximum AUROC any scorer can reach against labels
+that disagree; see `scripts/estimate_noise_ceiling.py`) and committed *before* the training run — a
+bar may be tightened before a run, never loosened after one, so the git history is the
+pre-registration record. Provenance (`source`, `derivation`, `registered`) travels into every
+`Report` and downstream audit artifact.
 
 ## The non-negotiable discipline (read before adding code)
 

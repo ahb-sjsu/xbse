@@ -1,0 +1,64 @@
+I've gone through the whole repo — README, all core modules, the joint cross-dataset machinery, instances, tests, docs, git history — and verified what I could in the sandbox (every Python file compiles; the torch-free logic works: I exercised the scorer, the circularity guard, `require_pass`, the admission filter, and `stable_frac` determinism directly, and all behave as documented; I couldn't run the full pytest/ruff suite because torch isn't installed here and the sandbox has no network).
+
+Overall verdict first: this is unusually good research engineering. The core idea — one shared encoder/objective/gate, domains as PairSource plugins — is clean and correctly factored. The epistemic discipline is the standout: the circularity guard actually throws, the admission filter is executable rather than a doc, reports are bound to checkpoint hashes, the md5 split fix is exactly right (and the commit history shows you caught the salted-`hash()` bug honestly), and the README openly reports the within-dataset AUROC collapse instead of burying it. That's rare. But there are several real problems, and one of them is structural.
+
+## 1. The gate contradicts the scorecard — your keystone can't legally load-bear yet
+
+`LEBSE_BAR` requires `structure_auroc > 0.97`. Your celebrated cross-dataset numbers are 0.62–0.85. Under the code as written, **every one of the seven "rehabilitated" moral dimensions fails the gate**, every `train_adversarial` run prints "FAILED GATE — no downstream tools, no claims," and `DimensionScorer.from_pairsource` → `require_pass` will refuse to construct a scorer for any of them. So by your own hard-stop rule, zero MoralVector feeders currently exist, and the README's "rehabilitated from artifact to real" scorecard sits in tension with the "no claims" discipline three sections below it.
+
+The deeper issue is that the 0.97 bar was imported from LeBSE's *citation retrieval* task — a much easier discrimination than cross-corpus moral valence with annotator-disagreement labels (your own MoBSE docstring concedes "the AUROC bar may be genuinely harder to hit here"). You have three coherent options: (a) pre-register a *per-task-difficulty* bar with a written justification (e.g. a bar defined relative to an untrained baseline plus a noise-ceiling estimate from inter-annotator agreement); (b) keep 0.97 and accept that the framework honestly reports "not yet validated" for all moral dims; or (c) tier the gate (e.g. PROVISIONAL vs VALIDATED) so the scorer can be built in a clearly-labeled provisional mode. What you can't do is keep the single 0.97 bar and the scorecard framing together — since this is the keystone of the safety framework, an internally inconsistent gate is the first thing a skeptical reviewer will find.
+
+## 2. The fuzz-ratio half of the gate is vacuous for joint instances
+
+In `JointPairSource.heldout_eval`, the only surface perturbation is prepending `"Reportedly, "`. That's so weak that `surface_invariance` will sit near 1.0, the denominator of `fuzz_ratio` near zero, and the ratio will clear `fuzz_min = 1.0` essentially always. So for joint instances the gate degenerates to the (currently impossible) AUROC test alone: one half vacuous, one half unpassable. The design doc even flags `augment.py` (the surface-transform registry) as **missing** — this is where it's needed. Real paraphrases, back-translation, register shifts, and framing changes would make the fuzz test mean something again.
+
+## 3. Lexical leakage weakens the "can't use surface" argument
+
+The core claim is that cross-corpus same-sign positives force the encoder off surface features. But for several dimensions both corpora are *selected by the same keyword list* (`_ethics_rows(HARM_KW)` and BeaverTails both concentrate "kill/hurt/attack…"; the foundations use one shared keyword set for Social-Chem and ETHICS). Valence-correlated vocabulary is shared surface across corpora, and the encoder can exploit it. Your untrained baselines (~0.47–0.55) show the base model doesn't, but a fine-tuned one might learn "violence vocabulary → negative" rather than moral structure. The cheap control: report a bag-of-words / keyword-logistic-regression baseline on the same cross-dataset held-out pairs. If BoW gets 0.75 where the encoder gets 0.79, the headline changes. This belongs next to the severity_auroc as a standing honesty metric.
+
+## 4. Repo state and portability
+
+The working tree has `.github/workflows/{ci.yml, publish.yml}` **deleted** (git status shows `D`) and an uncommitted rewrite of `src/xbse/instances/__init__.py` — the README's CI badge points at a workflow that won't exist if this tree gets committed. Beyond that, since you've wired up PyPI Trusted Publishing, portability now matters: `scripts/run_joint.py` hardcodes `sys.path.insert(0, "/home/claude/xbse/src")` (a dev-machine absolute path; unnecessary since the package is pip-installable); `joint_builders.py` hardcodes `/archive/ethics-corpora/...` paths with no env-var override or friendly error; and `BSEEncoder`/`discover`/`search` default to `device="cuda"`, which crashes on CPU-only installs. For a published package, corpus paths should come from config/env with a clear "dataset not found — see data_sourcing_plan.md" message, and device should default to `"cuda" if torch.cuda.is_available() else "cpu"`.
+
+## 5. Code-health items
+
+A few smaller but real ones. `xbse/__init__.py` eagerly imports `discover` → `encoder` → torch, so even the numpy-only `scorer` and the pure-logic guards can't be imported without torch installed — lazy-import the encoder-dependent names and the package's "teeth" become usable in lightweight contexts. `adversary.py` duplicates the gradient-reversal implementation in `adversarial.py` and appears unused — dead code; keep one. `DimensionScorer._labeled_sample` reaches into a private `source._rows()` and relies on a positional "text at [-2], sign at [-1]" convention — one reordered tuple away from silently scoring garbage; make it an explicit `labeled_rows()` method on `PairSource`. And the encoder's `except Exception:` fallback silently reloads *without* safetensors — the exact torch.load path the comment says you're avoiding; at minimum log a loud warning, arguably just fail.
+
+## 6. Tests guard the fences, not the field
+
+The tests are well-aimed at the enforcement machinery (circularity, admission, require_pass — all pass when I ran their logic directly). But the most consequential code is untested: the gate math (`fuzz_ratio`, `structure_vs_surface_auroc` — trivially testable offline with your existing FakeEncoder pattern and synthetic embeddings with known AUROC) and `JointPairSource` itself (cross-domain positive/negative picking, split determinism, the guarantee that held-out structural pairs are genuinely cross-corpus). Given that the whole framework's honesty rests on the joint source constructing pairs correctly, a synthetic two-corpus fixture test would be the highest-value test you could add.
+
+One last framing note, since you called this the keystone of the safety framework: the *discipline* here (falsification order, executable gates, honest failure reporting) is genuinely the strongest part and worth showcasing. But right now the keystone's own gate says nothing has validated, while the README says seven things have. Resolving that — with a pre-registered, justified bar and the BoW control — is the single change that would most strengthen both this repo and erisml-lib's credibility downstream. Happy to draft the tiered-gate design, the surface-augmentation registry, or the missing tests if you want to tackle any of these next.
+
+
+the 0.97 was inherited from a citation-retrieval task and moral valence with noisy human labels genuinely can't reach it. But I'd push back gently on how you land the fix, because "the ceiling is lower" is exactly the kind of statement your own framework is built to distrust. If the bar drops to, say, 0.70 *after* observing scores of 0.62–0.85, the gate has been calibrated to bless the results it just saw — the Texas sharpshooter version of validation, and the first thing a reviewer will notice given how loudly the README promises "no instance can grade itself easier than another." The number itself isn't the problem; the provenance of the number is.
+
+The defensible move is to *derive* the ceiling rather than assert it, and pre-register the derived bar per dimension before the next training run. Three derivations are available with data you already have:
+
+**Label-noise ceiling.** Your labels carry known disagreement: Social-Chem's `rot-agree` distribution, the dual-judge (qwen3+glm-5) agreement rate on the privacy/env corpora, and ETHICS' reported annotator agreement. If two independent judges agree on sign with probability p, a simple simulation gives the maximum AUROC any scorer can achieve against one judge's labels — that's a per-dimension ceiling computed *from the corpus, not from your model's results*. The bar then becomes something like "≥ X% of the noise ceiling," and physical_harm being harder than privacy falls out naturally instead of being excused ad hoc.
+
+**Baseline-relative floor.** Require lift over two nulls: the untrained encoder (you already report this) and a bag-of-words / keyword logistic baseline on the same held-out pairs (which also directly addresses the lexical-leakage concern from before). A bar of "beats both nulls by a pre-registered margin AND clears Y absolute" is much harder to game than any single scalar.
+
+**Cross-judge AUROC as a sanity anchor.** Where you have two label sources for the same texts, the AUROC of judge A's scores predicting judge B's labels is an empirical "human-equivalent" reference point — if your encoder approaches it, that's the honest headline.
+
+Mechanically this is a small change, and your code already has the hook: `Report.bar_source` exists but is hardcoded to `"LeBSE"`. Sketch:
+
+```python
+@dataclass(frozen=True)
+class Bar:
+    auroc_min: float
+    fuzz_min: float
+    source: str          # e.g. "noise-ceiling(rot-agree)*0.9, pre-registered 2026-07-10"
+    derivation: str      # one sentence: how auroc_min was computed, BEFORE training
+
+class PairSource(ABC):
+    bar: Bar             # declared alongside admission — no default; absence throws,
+                         # same teeth as AdmissionCriteria
+```
+
+`gate()` takes the instance's bar, `Report` records `bar.source` and `bar.derivation`, and the LeBSE 0.97 stays as the bar for instances where it's actually apt (SciBSE, a future LeBSE refactor). The one discipline rule to write down: a bar may only ever be set or tightened before a training run, never loosened after one — and since bars live in git next to the code, the commit history *is* the pre-registration record, which fits your style.
+
+Two follow-ons worth doing in the same pass: fix the vacuous fuzz denominator (real surface transforms, since a per-dimension bar makes the fuzz half of the gate meaningful again), and update the README so the scorecard and the gate tell one story — "0.62–0.85 against per-dimension noise-ceiling bars of X–Y, N of 9 validated" is a stronger sentence than the current one precisely because it survives hostile reading.
+
+See the example patch — `Bar` dataclass, `validate.py`/`report.py` changes, a noise-ceiling estimation script that reads `rot-agree` and the dual-judge files, and the offline tests for the gate math
+xbse\xbse-preregistered-bar.patch

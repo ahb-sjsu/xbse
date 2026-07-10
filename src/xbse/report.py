@@ -29,6 +29,8 @@ class Report:
     metrics: dict
     passed: bool
     bar_source: str = "LeBSE"
+    bar_derivation: str = ""  # how the bar was computed, copied from the instance's Bar
+    bar_registered: str = ""  # ISO date the bar was pre-registered
     extra: dict = field(default_factory=dict)
 
     def to_json(self, path: str | None = None) -> str:

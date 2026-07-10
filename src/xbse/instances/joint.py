@@ -39,11 +39,13 @@ class JointPairSource(PairSource):
         holdout_frac: float = 0.1,
         invariant_structure: str = "",
         label_source: str = "",
+        bar=None,  # xbse.bar.Bar — pre-registered per-dimension bar (see estimate_noise_ceiling)
     ):
         self.name = name
         self._domain_specs = list(domains)
         self.domain_names = [d[0] for d in self._domain_specs]
         self.holdout_frac = holdout_frac
+        self.bar = bar
         self.admission = AdmissionCriteria(
             invariant_structure=invariant_structure or f"{name} valence (shared across corpora)",
             surface_class="wording / which corpus the text is drawn from",

@@ -103,7 +103,7 @@ def train_adversarial(
         torch.save(encoder.state_dict(), checkpoint_path)
 
     ev = source.heldout_eval()
-    metrics = gate(encoder, ev)
+    metrics = gate(encoder, ev, bar=source.resolve_bar())
 
     # --- severity (polar radius) cross-dataset sub-metric ---
     sp = ev["structural_pairs"]
@@ -134,6 +134,9 @@ def train_adversarial(
             "domain_chance": round(1.0 / n_domains, 4),
         },
         passed=metrics["passed"],
+        bar_source=metrics["bar_source"],
+        bar_derivation=metrics["bar_derivation"],
+        bar_registered=metrics["bar_registered"],
     )
     print("=== CROSS-DATASET GATE (joint + adversarial) ===")
     print(report.to_json(report_path))

@@ -49,10 +49,15 @@ class PairSource(ABC):
 
     Every instance MUST declare `admission` (an AdmissionCriteria). check_admission() runs the
     executable filter — a domain without a definable invariant structure, surface class, AND an
-    independent label source may not be built (design §3.1)."""
+    independent label source may not be built (design §3.1).
+
+    Every instance SHOULD declare `bar` (a pre-registered xbse.bar.Bar derived from corpus
+    properties — see scripts/estimate_noise_ceiling.py). An instance without one falls back to
+    the legacy LeBSE bar with a loud warning; that fallback is a migration aid, not a policy."""
 
     name: str = "abstract"
     admission: AdmissionCriteria | None = None
+    bar = None  # xbse.bar.Bar | None — pre-registered per-instance validation bar
 
     def check_admission(self) -> AdmissionCriteria:
         if self.admission is None:
@@ -60,6 +65,23 @@ class PairSource(ABC):
 
             raise AdmissionError(f"[{self.name}] declares no AdmissionCriteria — cannot be built.")
         return self.admission.validate(self.name)
+
+    def resolve_bar(self):
+        """Return this instance's pre-registered Bar; warn loudly on legacy fallback.
+
+        The fallback exists so pre-Bar instances keep running during migration. It is
+        deliberately noisy: a bar that nobody chose is not a pre-registration."""
+        if self.bar is not None:
+            return self.bar
+        from .bar import LEBSE_LEGACY_BAR
+
+        print(
+            f"[{self.name}] WARNING: no per-instance Bar declared — falling back to the legacy "
+            f"LeBSE bar (auroc>{LEBSE_LEGACY_BAR.auroc_min}). Derive and pre-register a bar "
+            f"(scripts/estimate_noise_ceiling.py) before treating any PASS/FAIL as meaningful.",
+            flush=True,
+        )
+        return LEBSE_LEGACY_BAR
 
     @abstractmethod
     def train_triplets(self) -> Iterator[Triplet]:

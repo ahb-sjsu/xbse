@@ -8,6 +8,7 @@ discipline: build an instance -> validate (hard stop) -> only then earn downstre
 __version__ = "0.1.0"
 
 from .admission import AdmissionCriteria, AdmissionError
+from .bar import LEBSE_LEGACY_BAR, Bar, BarError
 from .discover import discover, frozen_proxy, print_table
 from .encoder import BSEEncoder
 from .objective import info_nce
@@ -20,6 +21,9 @@ __all__ = [
     "BSEEncoder",
     "PairSource",
     "Triplet",
+    "Bar",
+    "BarError",
+    "LEBSE_LEGACY_BAR",
     "CircularityError",
     "AdmissionCriteria",
     "AdmissionError",

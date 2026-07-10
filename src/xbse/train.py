@@ -62,13 +62,16 @@ def train(
     # --- MANDATORY validation gate -> signed Report (hard stop lives with the caller) ---
     if checkpoint_path:
         torch.save(encoder.state_dict(), checkpoint_path)
-    metrics = gate(encoder, source.heldout_eval())
+    metrics = gate(encoder, source.heldout_eval(), bar=source.resolve_bar())
     report = Report(
         instance=source.name,
         checkpoint_hash=hash_checkpoint(checkpoint_path) if checkpoint_path else "unsaved",
         thresholds=metrics["thresholds"],
         metrics={k: metrics[k] for k in ("surface_invariance", "fuzz_ratio", "structure_auroc")},
         passed=metrics["passed"],
+        bar_source=metrics["bar_source"],
+        bar_derivation=metrics["bar_derivation"],
+        bar_registered=metrics["bar_registered"],
     )
     print("=== VALIDATION GATE ===")
     print(report.to_json(report_path))
