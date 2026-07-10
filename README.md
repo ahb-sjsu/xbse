@@ -1,8 +1,13 @@
 # xbse — modular domain-specific sentence embeddings, validated by one shared gate
 
 [![CI](https://github.com/ahb-sjsu/xbse/actions/workflows/ci.yml/badge.svg)](https://github.com/ahb-sjsu/xbse/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.10--3.12-blue.svg)](https://www.python.org)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with ty](https://img.shields.io/badge/type%20checked-ty-261230.svg)](https://github.com/astral-sh/ty)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+[![tests](https://img.shields.io/badge/tests-pytest-0A9EDC.svg?logo=pytest&logoColor=white)](https://docs.pytest.org)
 
 `*-BSE` models (LaBSE, LeBSE, MoBSE, …) are the *same architecture* trained to be **invariant to
 one axis** and **sensitive to another**. `xbse` factors out everything they share and leaves each
