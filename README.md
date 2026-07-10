@@ -37,8 +37,12 @@ flowchart LR
     OBJ --> GATE{"Shared gate<br/>structure-AUROC + fuzz-ratio"}
     GATE -->|pass| OK["validated encoder<br/>earns encode / distance / probe"]
     GATE -->|fail| STOP["HARD STOP<br/>no tools, no claims — iterate"]
-    classDef s fill:#e3f2fd,stroke:#1565c0; classDef o fill:#c8e6c9,stroke:#2e7d32; classDef x fill:#ffcdd2,stroke:#c62828;
-    class PS,ENC,OBJ s; class OK o; class STOP x;
+    classDef s fill:#e3f2fd,stroke:#1565c0
+    classDef o fill:#c8e6c9,stroke:#2e7d32
+    classDef x fill:#ffcdd2,stroke:#c62828
+    class PS,ENC,OBJ s
+    class OK o
+    class STOP x
 ```
 
 ```
@@ -80,7 +84,8 @@ flowchart TB
     J --> ENC["shared BGE-M3 encoder"]
     ENC --> GRL["gradient-reversal<br/>domain head (optional)"]
     ENC --> XG["cross-dataset held-out gate<br/>= the honest number"]
-    classDef s fill:#e3f2fd,stroke:#1565c0; class A,B,J,ENC,GRL,XG s;
+    classDef s fill:#e3f2fd,stroke:#1565c0
+    class A,B,J,ENC,GRL,XG s
 ```
 
 ## Status — honest cross-dataset scorecard
