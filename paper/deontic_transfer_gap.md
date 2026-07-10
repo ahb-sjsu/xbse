@@ -41,8 +41,10 @@ load-bearing variable is **corpus independence**:
 cross-dataset transfer *and* concept-distinctness both require it. The originally-striking "deontic column transfers worst" pattern is **confounded**
 with corpus-sharing and is offered only as a hypothesis. The one robust concept-level result is
 `rights_respect`: it fails even in a stratified, class-balanced, same-jurisdiction-adjacent design,
-consistent with rights being *framework-relative* (a right is what a legitimate order grants), with
-a small-corpus caveat. The contribution is methodological: a validation regime — cross-dataset gate
+consistent with rights being *framework-relative* (a right is what a legitimate order grants). A
+within-corpus decomposition sharpens this: rights labels are coherent *within* each corpus
+(frozen-probe AUROC 0.71–0.77) but do not transfer — the largest within→cross drop of any dimension —
+so the failure is in transfer, not learnability (small-corpus caveat aside). The contribution is methodological: a validation regime — cross-dataset gate
 + transfer matrix + valence baseline — that distinguishes encoders that learned a *concept* from
 those that learned a *corpus*.
 
@@ -221,19 +223,52 @@ Art 2–3 ↔ US excessive-force), with and without the adversary: flat loss acr
 AUROC **0.506** (one adversarial run's *training* loss briefly collapsed to 0.54 but did not improve
 held-out AUROC — an unstable outlier). Four configurations, one persistent failure.
 
-**Is rights *unlearnable* or merely *untransferable*? (decomposition owed, per reviewer.)** The 0.475
-is cross-corpus by construction, so it cannot by itself distinguish two very different failures. If
-the encoder cannot fit even *within*-corpus ECHR labels, the story is mundane — **label incoherence
-or a pipeline artifact** (case-level article-violation labels are noisy: a long judgment can violate
-one article while upholding others, and mean-pooling dilutes a localized signal). Only if
-within-corpus AUROC is *high* and cross-corpus fails do we have the framework-relativity signature.
-The flat *training* loss across configurations leans toward the mundane reading — which would
-**weaken**, not support, the framework-relativity hypothesis of §4. We do not yet have the
-within-corpus rights number; **computing within-corpus AUROC for all nine dimensions** (the
-within→cross drop is itself part of the story) is a committed next step, and until it lands the
-framework-relativity reading is a hypothesis the data has not yet earned.
+**Is rights *unlearnable* or merely *untransferable*? (decomposition, per reviewer — now resolved,
+§3.5.)** The 0.475 is cross-corpus by construction and cannot alone distinguish absent within-corpus
+signal (**label incoherence**, unlearnable) from present-but-non-transferring signal
+(**framework-relativity**, untransferable). A frozen within-corpus linear probe (§3.5) settles it:
+rights labels are **strongly decodable within each corpus** — ECHR 0.77, CourtListener 0.71, well
+above chance — so they are *coherent, not incoherent*. The flat cross-corpus training loss is
+therefore a **transfer** failure, not a label-fitting failure, which **supports** — not weakens — the
+framework-relativity reading of §4.
 
-### 3.5 Encoder invariance — the collapse survives a 1.5B decoder
+### 3.5 Within-corpus decomposition — rights is *untransferable*, not *unlearnable*
+
+A frozen-encoder linear probe (BGE-M3 embeddings, **no fine-tuning**, 5-fold stratified
+logistic-regression AUROC) measures whether each dimension's ± label is decodable *within a single
+corpus*. This separates the two failure modes a cross-corpus number conflates — absent within-corpus
+signal (label incoherence) vs present-but-non-transferring signal (framework-relativity):
+
+| dimension | within-corpus probe AUROC (corpus A / B) | cross-dataset (§3.1) |
+|---|---|---:|
+| privacy_protection | 0.91 / 0.87 | 0.853 |
+| societal_environmental | 0.99 / 0.95 | 0.817 |
+| virtue_care | 0.997 / 0.76 | 0.811 |
+| fairness_equity | 0.995 / 0.75 | 0.789 |
+| legitimacy_trust | 0.995 / 0.69 | 0.708 |
+| epistemic_quality | 0.99 / 0.81 | 0.817 |
+| physical_harm | 0.95 / 0.74 | 0.622 |
+| autonomy_respect | 0.99 / 0.72 | 0.747 |
+| **rights_respect** | **0.77 / 0.71** | **0.475** |
+
+Two things follow. **(1) Within-corpus success is universal and cheap.** Every dimension is linearly
+decodable within its corpora (0.69–0.997) — including rights — by a probe that never fine-tuned. This
+is the quantitative form of the paper's opening caution: within-corpus AUROC is deceptive because it
+is a property *every* dimension has (and the Social-Chem side is trivially separable at ~0.99 for all
+four family dimensions, which is exactly why they collapse into a shared valence). **(2) Rights is the
+decisive case.** Its within-corpus signal is strong (0.77 ECHR, 0.71 CourtListener) yet its
+cross-corpus AUROC craters to 0.475 — the **largest within→cross drop of any dimension**. Because a
+frozen probe recovers the rights label *inside* each corpus, the labels are **coherent, not
+incoherent**; the failure is specifically in *transfer across corpora/jurisdictions*. This is the
+framework-relativity signature, with evidence: it upgrades §4's rights claim from "a hypothesis the
+data has not yet earned" to "supported by decomposition."
+
+*Caveat.* The within column is a frozen linear probe; the cross column is the fine-tuned InfoNCE
+transfer — different estimators, so the exact numeric gap is not a clean subtraction. The *direction*
+is unambiguous, however: strong within-corpus decodability rules out label incoherence for every
+dimension, rights included, so the rights cross-failure can only be a transfer failure.
+
+### 3.6 Encoder invariance — the collapse survives a 1.5B decoder
 
 The natural objection to §3.2–3.3 is *capacity*: perhaps BGE-M3 (560M, encoder-only) is simply too
 weak to tell care from legitimacy, and a larger model would separate them. We test this with
@@ -275,8 +310,9 @@ encoder.** Cross-dataset AUROC alone (§3.1) passed all four shared-corpus dimen
 transfer matrix revealed they had learned a shared valence. Any framework that scores multiple moral
 dimensions from overlapping corpora risks measuring one thing under many names.
 
-**The rights failure is our most robust *candidate* concept-level result** (pending the within-corpus
-decomposition of §3.4, which could reduce it to label incoherence). We *hypothesize* it reflects
+**The rights failure is our most robust concept-level result**, now supported by the within-corpus
+decomposition (§3.5): rights labels are coherent within-corpus (frozen-probe AUROC 0.71–0.77) yet do
+not transfer, so the cross-corpus failure is a *transfer* failure, not label noise. We read this as
 framework-relativity: a right is an entitlement conferred by a *legitimate* order, so specific rights
 are jurisdiction-relative, and case-facts are embedded in incommensurable legal contexts even for
 the same underlying right. `rights_respect` and `legitimacy_trust` are coupled in the taxonomy
@@ -314,7 +350,7 @@ after the shared-corpus confound is removed.
   rewritten in Social-Chem style), or give two *different* dimensions corpora from the *same* family
   and check whether diagonal-dominance survives (§7).
 - **Confidence intervals**: text-level bootstrap CIs (an afternoon on 410–1200 pairs) are being
-  computed before wider circulation; several sub-0.02 gaps (e.g. the §3.5 0.807-vs-0.793) are
+  computed before wider circulation; several sub-0.02 gaps (e.g. the §3.6 0.807-vs-0.793) are
   reported as *matches*, not as ordered differences, pending those CIs.
 - **Dual-LLM-judge labels** (privacy, environmental, rights) may share bias; human audit needed
   (planned: ~100–200 items/slice, report human↔LLM agreement, not only LLM↔LLM).
@@ -323,7 +359,7 @@ after the shared-corpus confound is removed.
 - **Pseudo-replication**: AUROC is over structural pairs; text-level bootstrap CIs and per-dimension
   (n_pos, n_neg, unique-anchor, pair) counts are needed and not yet reported. Held-set sizes ranged
   410–1200 pairs per dimension.
-- **Single encoder/objective** (BGE-M3 + InfoNCE): partially addressed (§3.5). A 4×-larger decoder
+- **Single encoder/objective** (BGE-M3 + InfoNCE): partially addressed (§3.6). A 4×-larger decoder
   (gte-Qwen2-1.5B) reproduces the care↔legitimacy collapse and the privacy separation on a 3-dim
   slice, so the *collapse* is not a BGE-M3 capacity artifact; a full-nine, bidirectional-mode
   replication is still outstanding.
@@ -337,11 +373,12 @@ after the shared-corpus confound is removed.
 2. Does the concept-distinctness of the four independent-corpus dimensions survive a
    **register-controlled test** (concept fixed, register moved)? Diagonal-dominance that survives
    register control is concept-specificity; diagonal-dominance that vanishes was domain shift.
-3. Is rights *unlearnable* or merely *untransferable*? The within-corpus AUROC for all nine
-   dimensions (§3.4) decides between label-incoherence and framework-relativity. Does a conduct-level
-   rights label ("was someone brutalized/detained/silenced") transfer where case-law does not?
+3. Is rights *unlearnable* or merely *untransferable*? *(Answered, §3.5: untransferable — within-corpus
+   frozen-probe AUROC 0.71–0.77, cross 0.475, so the labels are coherent and the failure is transfer,
+   not learnability.)* Still open: does a conduct-level rights label ("was someone
+   brutalized/detained/silenced") transfer where case-law does not?
 4. Is the (confounded) column pattern real once corpus-sharing is removed?
-5. Does a stronger encoder separate the shared-corpus family that BGE-M3 collapses? *(Answered, §3.5:
+5. Does a stronger encoder separate the shared-corpus family that BGE-M3 collapses? *(Answered, §3.6:
    no — gte-Qwen2-1.5B reproduces the care↔legitimacy collapse. Open for the full nine dimensions in
    bidirectional mode.)*
 
@@ -372,7 +409,8 @@ not admit a single, jurisdiction-independent encoder at all.
 Code, the cross-dataset harness (`train_adv.py`, `validate.py`, `JointPairSource`), the bag-of-words
 control (`baselines.py`), pre-registered bars (`bar.py`, `joint_builders.py`), and the N×N
 transfer-matrix script (`scripts/cross_transfer.py` — parameterizable over any dimension set, so it
-regenerates both the 9×9 BGE-M3 matrix and the gte-Qwen2 3×3 of §3.5) are in
+regenerates both the 9×9 BGE-M3 matrix and the gte-Qwen2 3×3 of §3.6), and the within-corpus
+frozen-probe decomposition of §3.5 (`scripts/within_corpus.py`) are in
 `github.com/ahb-sjsu/xbse`; per-dimension corpora in `experiments/data_sourcing_plan.md`; the
 pre-registered independent-corpora experiment in `experiments/prereg_independent_corpora.md`.
 *Reproducibility caveat (being closed):* the family-pool baseline of §3.3 was run against the

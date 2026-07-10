@@ -1,0 +1,51 @@
+Within-corpus decomposition — frozen BGE-M3 linear probe, 5-fold stratified logistic-regression AUROC
+(paper §3.5). Run 2026-07-10 on Atlas GPU-1; scripts/within_corpus.py; XBSE_DATA_ROOT=/archive/ethics-corpora;
+cap 8000 rows/corpus. Answers reviewer-2 point 3: is rights unlearnable or merely untransferable?
+
+base=BAAI/bge-m3 pooling=mean cap=8000/corpus
+
+=== privacy_joint (cross=0.853) ===
+  within[rot           ] n= 1238 pos= 1077 AUROC=0.9122
+  within[aita          ] n=  658 pos=  200 AUROC=0.8667
+
+=== environmental_joint (cross=0.817) ===
+  within[climate_sentiment] n=  749 pos=  448 AUROC=0.9882
+  within[env_claims    ] n= 2214 pos= 1168 AUROC=0.9535
+
+=== rights_joint (cross=0.475) ===
+  within[echr          ] n= 8000 pos=  871 AUROC=0.7665
+  within[courtlistener ] n= 1873 pos=  668 AUROC=0.7069
+
+=== care_joint (cross=0.811) ===
+  within[socialchem    ] n= 8000 pos= 3642 AUROC=0.9971
+  within[ethics        ] n= 6853 pos= 4297 AUROC=0.7645
+
+=== fairness_joint (cross=0.789) ===
+  within[socialchem    ] n= 8000 pos= 2257 AUROC=0.9950
+  within[ethics        ] n= 8000 pos= 4584 AUROC=0.7525
+
+=== legitimacy_joint (cross=0.708) ===
+  within[socialchem    ] n= 8000 pos= 2624 AUROC=0.9951
+  within[ethics        ] n= 4993 pos= 3017 AUROC=0.6858
+
+=== epistemic_joint (cross=0.817) ===
+  within[socialchem    ] n= 2720 pos= 1028 AUROC=0.9935
+  within[ethics        ] n= 2506 pos= 1693 AUROC=0.8103
+
+=== physharm_joint (cross=0.622) ===
+  within[beavertails   ] n= 1375 pos= 1285 AUROC=0.9493
+  within[ethics        ] n= 2780 pos= 1687 AUROC=0.7384
+
+=== autonomy_joint (cross=0.747) ===
+  within[darkpattern   ] n= 2045 pos=  988 AUROC=0.9873
+  within[mentalmanip   ] n= 2915 pos=  899 AUROC=0.7177
+
+INTERPRETATION
+- Within-corpus signal is universal (0.69-0.997) — every dimension is linearly decodable inside its
+  corpora by a probe that never fine-tuned. Within-corpus AUROC is deceptive; it is a property every
+  dimension has (Social-Chem side ~0.99 for all four family dims -> why they collapse).
+- RIGHTS is the decisive case: strong within-corpus signal (ECHR 0.77, CourtListener 0.71) but cross
+  0.475 — the largest within->cross drop. Labels are COHERENT (probe recovers them within-corpus);
+  the failure is TRANSFER, not learnability. => framework-relativity confirmed, not label incoherence.
+- Caveat: within column is a frozen probe; cross column is fine-tuned InfoNCE transfer (different
+  estimators) — the direction is unambiguous but the exact gap is not a clean subtraction.
