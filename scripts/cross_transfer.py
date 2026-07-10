@@ -22,14 +22,24 @@ from xbse.encoder import BSEEncoder  # noqa: E402
 from xbse.instances.joint_builders import BUILDERS  # noqa: E402
 from xbse.validate import gate  # noqa: E402
 
-BASE = "Alibaba-NLP/gte-Qwen2-1.5B-instruct"
+BASE = os.environ.get("XBSE_BASE_MODEL", "Alibaba-NLP/gte-Qwen2-1.5B-instruct")
+POOLING = os.environ.get("XBSE_POOLING", "last")  # "last" for decoder embedders, "mean" for BGE
+MAX_LEN = int(os.environ.get("XBSE_MAX_LEN", "192"))
 
-# (short label, builder name, checkpoint path)
-PAIRS = [
+# (short label, builder name, checkpoint path). Override on the command line to run any N x N matrix
+# (e.g. the full 9x9 over BGE-M3 checkpoints): pass one "label:builder_name:/path/ckpt.pt" per dim.
+#   python cross_transfer.py care:care_joint:/ck/care.pt fair:fairness_joint:/ck/fair.pt ...
+# With no args, defaults to the gte-Qwen2 care/legitimacy/privacy 3-dim slice (paper §3.5).
+_DEFAULT = [
     ("care", "care_joint", "/work/gte_care.pt"),
     ("legit", "legitimacy_joint", "/work/gte_legit.pt"),
     ("privacy", "privacy_joint", "/work/gte_privacy.pt"),
 ]
+if len(sys.argv) > 1:
+    PAIRS = [tuple(a.split(":", 2)) for a in sys.argv[1:]]
+    assert all(len(p) == 3 for p in PAIRS), "each arg must be label:builder_name:/path/ckpt.pt"
+else:
+    PAIRS = _DEFAULT
 LABELS = [p[0] for p in PAIRS]
 
 # Build each held-out eval set once (deterministic split inside the builder).
@@ -41,7 +51,7 @@ for short, name, _ck in PAIRS:
 
 
 def load(path: str) -> BSEEncoder:
-    enc = BSEEncoder(base_model=BASE, pooling="last", max_len=192, device="cuda")
+    enc = BSEEncoder(base_model=BASE, pooling=POOLING, max_len=MAX_LEN, device="cuda")
     sd = torch.load(path, map_location="cuda")
     enc.load_state_dict(sd)
     enc.eval()

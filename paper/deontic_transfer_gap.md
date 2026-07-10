@@ -1,4 +1,4 @@
-# When Do Moral-Dimension Encoders Learn Distinct Concepts? Cross-Dataset Validation, Corpus Independence, and a Deontic Transfer Gap
+# When Do Moral-Dimension Encoders Learn Distinct Concepts? Corpus Independence as the Load-Bearing Variable in Cross-Dataset Moral Encoding
 
 **Andrew H. Bond**
 Department of Computer Engineering, San José State University · `agi.hpc@gmail.com`
@@ -25,9 +25,12 @@ independence, not the taxonomy**: the four dimensions with independent corpora (
 environmental, autonomy, physical_harm) are diagonal-dominant and specific, while the four sharing a
 single corpus family (care, fairness, legitimacy, epistemic — all from Social-Chem + ETHICS)
 cross-contaminate, each firing on the others. A **valence-pool baseline** makes the collapse
-decisive: an encoder trained on the pooled valence of the four shared-corpus dimensions *matches or
-beats* all four dedicated encoders (gaps −0.01 to −0.12) while failing on the four independent ones
-(gaps +0.17 to +0.42) — those four are not four concepts but **one**. Both controls converge with an
+decisive: an encoder trained on the pooled valence of the four shared-corpus dimensions *matches*
+all four dedicated encoders (and, with ~4× data, exceeds two — we rely only on "matches") while
+failing on the four independent ones (gaps +0.17 to +0.42) — those four are not four concepts but
+**one**. We are symmetric about the confound: the four *independent*-corpus dimensions are distinct
+**at the corpus level**, but their concept-level distinctness is itself confounded with register
+shift and awaits a register-controlled test, so we do not overclaim it either. Both controls converge with an
 independent rank test in implying the nine named dimensions occupy only **~5 effective axes** (a
 general commonsense-valence factor + privacy, environmental, autonomy, physical_harm), plus rights
 (which does not train). A cross-encoder replication then rules out the obvious objection that this is
@@ -101,20 +104,25 @@ where not (privacy, environmental, CourtListener rights). LLM labels are a threa
 
 Cross-dataset held-out AUROC with both nulls and the baseline-relative verdict:
 
+**Margin is defined consistently as `cross − max(untrained-null, BoW-null)`** — the gap to the
+*stricter* of the two nulls — so the bar is the same test in every row (some earlier drafts silently
+switched which null they measured against; this column is recomputed against the binding null).
+
 | dimension | corpora | baseline | cross | BoW | margin | verdict |
 |---|---|---:|---:|---:|---:|---|
-| privacy_protection | privacy-RoTs + AITA | 0.55 | 0.853 | 0.54 | +0.31 | PASS |
+| privacy_protection | privacy-RoTs + AITA | 0.55 | 0.853 | 0.54 | +0.30 | PASS |
 | epistemic_quality | Social-Chem + ETHICS | 0.48 | 0.817 | 0.53 | +0.29 | PASS |
-| societal_environmental | ClimateBERT + dual-judged claims | 0.43 | 0.817 | 0.48 | +0.33 | PASS |
+| societal_environmental | ClimateBERT + dual-judged claims | 0.43 | 0.817 | 0.48 | +0.34 | PASS |
 | virtue_care | Social-Chem + ETHICS | 0.47 | 0.811 | 0.53 | +0.28 | PASS |
 | fairness_equity | Social-Chem + ETHICS | 0.47 | 0.789 | 0.51 | +0.28 | PASS |
 | autonomy_respect | ec-darkpattern + MentalManip | 0.52 | 0.747 | 0.53 | +0.22 | PASS |
 | legitimacy_trust | Social-Chem + ETHICS | 0.52 | 0.708 | 0.53 | +0.18 | PASS |
-| physical_harm | BeaverTails + ETHICS-harm | 0.50 | 0.622 | 0.46 | +0.16 | PASS |
-| rights_respect | ECHR + ETHICS-justice | 0.52 | 0.475 | 0.49 | −0.01 | FAIL |
+| physical_harm | BeaverTails + ETHICS-harm | 0.50 | 0.622 | 0.46 | +0.12 | PASS |
+| rights_respect | ECHR + ETHICS-justice | 0.52 | 0.475 | 0.49 | −0.05 | FAIL |
 
 Bag-of-words is near chance throughout, so the passing encoders are not explained by our lexical
-baseline. This *motivated* the first draft's story — but it does not, by itself, show the encoders
+baseline. (Recomputed margins shift physical_harm +0.16→+0.12 and rights −0.01→−0.05 — both now
+measured against their binding untrained null rather than BoW — but no verdict flips.) This *motivated* the first draft's story — but it does not, by itself, show the encoders
 learned *distinct* concepts. That needs the transfer matrix.
 
 ### 3.2 The 9×9 transfer matrix — the pivotal result
@@ -144,6 +152,14 @@ Two groups fall out cleanly, split by **corpus independence, not by the taxonomy
   These four fire on each other, with epistemic as the attractor — they share a corpus-specific
   "commonsense-moral valence," not four distinct concepts.
 
+**The epistemic attractor is a clue, not a curiosity.** Everything in the family transfers to
+epistemic *better than to itself* (`care→epistemic 0.871 > care→care 0.825`). The most economical
+explanation is that epistemic_quality's held-out pairs are simply the **easiest** — cleanest labels
+or strongest valence separation — which would *also* inflate its standalone PASS in §3.1. That is, the
+transfer matrix's eval difficulty varies by dimension. A per-dimension pair-difficulty / label-
+agreement diagnostic (planned, §6) would settle whether "epistemic is the attractor" is a fact about
+the concept or about our eval set; we flag it rather than gloss it.
+
 Notably, the couplings we *predicted from theory* (care↔harm; fairness↔rights) do **not** appear —
 `care→harm` is 0.39 (below chance), because harm's independent corpus separates it. The actual
 coupling is the shared-corpus family.
@@ -170,12 +186,22 @@ per dimension:
   | autonomy_respect | 0.726 | 0.533 | +0.193 |
   | physical_harm | 0.626 | 0.459 | +0.167 |
 
-  **A single encoder trained on the pooled family valence matches or *beats* all four dedicated
-  family encoders** (it is markedly better at legitimacy, 0.795 vs 0.671, and epistemic, 0.914 vs
-  0.843), while failing completely on the four independent-corpus dimensions. This is decisive:
+  **A single encoder trained on the pooled family valence matches all four dedicated family
+  encoders** — and, with ~4× the training data, *exceeds* two of them (legitimacy 0.795 vs 0.671,
+  epistemic 0.914 vs 0.843). The core inference needs only *matches* (which holds); we flag the
+  excess as partly a sample-size effect and do **not** lean on "beats." Meanwhile the pool fails
+  completely on the four independent-corpus dimensions. The collapse conclusion is robust:
   care/fairness/legitimacy/epistemic are **not four concepts but one** — a shared commonsense-moral
-  valence — and the four independent-corpus dimensions are genuinely distinct from it and from each
-  other (§3.2).
+  valence.
+
+  We are deliberately more cautious about the **mirror-image** claim — that the four
+  independent-corpus dimensions are *concept*-distinct. Their low off-diagonals (§3.2) are confounded
+  with **register/domain shift**: a privacy encoder scoring ~0.5 on care pairs is consistent with
+  "privacy is a different concept" *and* with "the privacy encoder never saw Social-Chem's register."
+  The same confound-logic we apply to the collapse must be pointed the other way. We therefore claim
+  only that these four are **distinct at the corpus level**; establishing concept-level distinctness
+  requires a register-controlled test (hold the concept fixed, move the register — §6, §7), which we
+  pre-register rather than assert.
 
 **Convergent evidence for a lower-rank moral space.** Under both the transfer matrix (§3.2) and the
 family pool, the nine named dimensions reduce to **~five empirically-distinct axes**: {a shared
@@ -195,6 +221,18 @@ Art 2–3 ↔ US excessive-force), with and without the adversary: flat loss acr
 AUROC **0.506** (one adversarial run's *training* loss briefly collapsed to 0.54 but did not improve
 held-out AUROC — an unstable outlier). Four configurations, one persistent failure.
 
+**Is rights *unlearnable* or merely *untransferable*? (decomposition owed, per reviewer.)** The 0.475
+is cross-corpus by construction, so it cannot by itself distinguish two very different failures. If
+the encoder cannot fit even *within*-corpus ECHR labels, the story is mundane — **label incoherence
+or a pipeline artifact** (case-level article-violation labels are noisy: a long judgment can violate
+one article while upholding others, and mean-pooling dilutes a localized signal). Only if
+within-corpus AUROC is *high* and cross-corpus fails do we have the framework-relativity signature.
+The flat *training* loss across configurations leans toward the mundane reading — which would
+**weaken**, not support, the framework-relativity hypothesis of §4. We do not yet have the
+within-corpus rights number; **computing within-corpus AUROC for all nine dimensions** (the
+within→cross drop is itself part of the story) is a committed next step, and until it lands the
+framework-relativity reading is a hypothesis the data has not yet earned.
+
 ### 3.5 Encoder invariance — the collapse survives a 1.5B decoder
 
 The natural objection to §3.2–3.3 is *capacity*: perhaps BGE-M3 (560M, encoder-only) is simply too
@@ -213,10 +251,11 @@ privacy         0.484   0.537   0.758
 ```
 
 The structure is unchanged from BGE-M3. **The care↔legitimacy collapse persists**: the symmetric
-cross-AUROC (0.784) *equals or exceeds* the within-AUROC (min 0.734) — the legitimacy encoder scores
-**0.807 on care**, higher than the care encoder scores on itself (0.793) and higher than legitimacy
-on itself (0.734). The two encoders remain interchangeable; there is no care-specific structure a
-bigger model recovered. **Privacy stays distinct**: privacy↔care gap +0.26, privacy↔legitimacy gap
+cross-AUROC (0.784) *matches* the within-AUROC (min 0.734) — the legitimacy encoder scores **0.807
+on care**, statistically indistinguishable from the care encoder's own 0.793 (a 0.014 gap on ~1k
+pairs is within bootstrap noise — we do *not* claim it is "higher than itself") and clearly above
+legitimacy on itself (0.734). The two encoders are interchangeable on care; there is no care-specific
+structure a bigger model recovered. **Privacy stays distinct**: privacy↔care gap +0.26, privacy↔legitimacy gap
 +0.20; privacy's encoder is at chance (0.48–0.54) on the family dimensions and both family encoders
 are at chance (0.51–0.53) on privacy. A 4×-larger, architecturally-different encoder reproduces
 *both* the collapse and the separation. The ~5-effective-axis structure is therefore a property of
@@ -236,7 +275,8 @@ encoder.** Cross-dataset AUROC alone (§3.1) passed all four shared-corpus dimen
 transfer matrix revealed they had learned a shared valence. Any framework that scores multiple moral
 dimensions from overlapping corpora risks measuring one thing under many names.
 
-**The rights failure is the robust concept-level result.** We *hypothesize* it reflects
+**The rights failure is our most robust *candidate* concept-level result** (pending the within-corpus
+decomposition of §3.4, which could reduce it to label incoherence). We *hypothesize* it reflects
 framework-relativity: a right is an entitlement conferred by a *legitimate* order, so specific rights
 are jurisdiction-relative, and case-facts are embedded in incommensurable legal contexts even for
 the same underlying right. `rights_respect` and `legitimacy_trust` are coupled in the taxonomy
@@ -266,6 +306,16 @@ after the shared-corpus confound is removed.
 - **The column claim is retracted to a hypothesis** (small n; confounded with corpus-sharing).
 - **Shared corpora** for four dimensions is the central confound the transfer matrix exposes; until
   fixed, those four are not established as distinct.
+- **Register confound on the *specificity* side (symmetric to the collapse confound).** The four
+  independent-corpus dimensions' low off-diagonals are confounded with domain/register shift: an
+  encoder scoring ~chance off-diagonal is consistent with concept-specificity *and* with never having
+  seen the other corpus's register. We therefore claim only corpus-level distinctness. The fix is a
+  register-controlled test — hold the concept fixed and move the register (e.g. privacy-labeled text
+  rewritten in Social-Chem style), or give two *different* dimensions corpora from the *same* family
+  and check whether diagonal-dominance survives (§7).
+- **Confidence intervals**: text-level bootstrap CIs (an afternoon on 410–1200 pairs) are being
+  computed before wider circulation; several sub-0.02 gaps (e.g. the §3.5 0.807-vs-0.793) are
+  reported as *matches*, not as ordered differences, pending those CIs.
 - **Dual-LLM-judge labels** (privacy, environmental, rights) may share bias; human audit needed
   (planned: ~100–200 items/slice, report human↔LLM agreement, not only LLM↔LLM).
 - **Rights confounds**: the stratified US-force slice was small (369); scarcity is not fully ruled
@@ -279,18 +329,32 @@ after the shared-corpus confound is removed.
   replication is still outstanding.
 - **Keyword-based** foundation and stratum filters are coarse.
 
-## 7. Open questions
+## 7. Open questions and a pre-registered prediction
 1. Do the four shared-corpus dimensions become distinct when given *independent* corpora — or is
    the ~5-dimensional collapse a property of the moral space rather than the data? (The family-pool
    control already confirms they collapse *under shared corpora*; this asks whether independence
    separates them.)
-3. Is rights unlearnable cross-jurisdiction, or only under aggregate labels / short context / this
-   encoder? Does a conduct-level rights label ("was someone brutalized/detained/silenced") transfer
-   where case-law does not?
+2. Does the concept-distinctness of the four independent-corpus dimensions survive a
+   **register-controlled test** (concept fixed, register moved)? Diagonal-dominance that survives
+   register control is concept-specificity; diagonal-dominance that vanishes was domain shift.
+3. Is rights *unlearnable* or merely *untransferable*? The within-corpus AUROC for all nine
+   dimensions (§3.4) decides between label-incoherence and framework-relativity. Does a conduct-level
+   rights label ("was someone brutalized/detained/silenced") transfer where case-law does not?
 4. Is the (confounded) column pattern real once corpus-sharing is removed?
 5. Does a stronger encoder separate the shared-corpus family that BGE-M3 collapses? *(Answered, §3.5:
    no — gte-Qwen2-1.5B reproduces the care↔legitimacy collapse. Open for the full nine dimensions in
    bidirectional mode.)*
+
+**Pre-registered prediction (committed to git before the run).** We now give **virtue_care** and
+**fairness_equity** independent second corpora — an empathy/prosocial corpus for care and a
+discrimination/social-bias corpus for fairness — replacing the shared Social-Chem↔ETHICS pairing with
+a Social-Chem↔independent-corpus pairing, and re-run the 4×4 family cross-transfer. **Prediction:** if
+care and fairness are genuinely distinct concepts, their off-diagonal cross-transfer to each other
+and to legitimacy/epistemic will *drop* below their (register-controlled) within-transfer by ≥0.10 —
+diagonal-dominance emerges. **Falsifier:** if the family still cross-contaminates under independent
+corpora, the ~5-axis collapse is a property of the moral space, not the data, and Implication 1 is
+wrong. This prediction and the corpus choices are committed before training; see
+`experiments/prereg_independent_corpora.md`.
 
 ## 8. Conclusion
 
@@ -305,9 +369,16 @@ not admit a single, jurisdiction-independent encoder at all.
 
 ## Reproducibility & acknowledgements
 
-Code, the cross-dataset harness, the bag-of-words control, pre-registered bars, and the transfer-
-matrix / valence-baseline scripts are in `github.com/ahb-sjsu/xbse`; per-dimension corpora in
-`experiments/data_sourcing_plan.md`. The experimental pipeline was executed with substantial
+Code, the cross-dataset harness (`train_adv.py`, `validate.py`, `JointPairSource`), the bag-of-words
+control (`baselines.py`), pre-registered bars (`bar.py`, `joint_builders.py`), and the N×N
+transfer-matrix script (`scripts/cross_transfer.py` — parameterizable over any dimension set, so it
+regenerates both the 9×9 BGE-M3 matrix and the gte-Qwen2 3×3 of §3.5) are in
+`github.com/ahb-sjsu/xbse`; per-dimension corpora in `experiments/data_sourcing_plan.md`; the
+pre-registered independent-corpora experiment in `experiments/prereg_independent_corpora.md`.
+*Reproducibility caveat (being closed):* the family-pool baseline of §3.3 was run against the
+harness with an ad-hoc pooled source; a dedicated committed `scripts/family_pool.py` is pending, and
+the §3.2/§3.3 numbers should be regarded as harness-reproducible but not yet one-command-reproducible
+until it lands. The experimental pipeline was executed with substantial
 AI-assisted automation; results are reproducible from the committed code and documented corpora.
 Circulated for critique — the author especially welcomes attempts to falsify the corpus-independence
 claim and the rights framework-relativity hypothesis, and thanks the reviewer whose insistence on a
