@@ -1,312 +1,314 @@
-# The Deontic Gap: The 3×3 Structure of Moral Reasoning Predicts the Cross-Dataset Transferability of Moral-Dimension Encoders
+# When Do Moral-Dimension Encoders Learn Distinct Concepts? Cross-Dataset Validation, Corpus Independence, and a Deontic Transfer Gap
 
 **Andrew H. Bond**
-Department of Computer Engineering, San José State University
-`agi.hpc@gmail.com`
+Department of Computer Engineering, San José State University · `agi.hpc@gmail.com`
 
-*Working draft — 2026-07-10. Circulated for critique; results are preliminary and several
-interpretations are explicitly flagged as hypotheses. Comments welcome.*
+*Working draft — revised 2026-07-10 after external review and three additional control experiments
+(a 9×9 off-diagonal transfer matrix, a generic-valence baseline, and an encoder-invariance
+replication on a 4×-larger decoder). Claims are stated as hypotheses where the evidence is
+preliminary; §Threats is expanded accordingly. Comments welcome.*
 
 ---
 
 ## Abstract
 
-We train nine sentence-embedding encoders, one per dimension of a 3×3 "MoralVector" taxonomy
-(scope × mode: {Individual, Relational, Collective} × {What-Matters, Who-Decides, What-We-Know}),
-and validate each on a held-out *second corpus* of the same dimension — the honest test of whether
-an encoder has learned a transferable moral concept rather than one dataset's vocabulary. Eight of
-nine dimensions clear a pre-registered, baseline-relative bar (cross-dataset AUROC beating both an
-untrained-encoder null and a bag-of-words null by ≥0.10); one — `rights_respect` — fails across four
-distinct corpus configurations. The central, unexpected finding is structural: **cross-dataset
-transferability is organized by the *mode* (column) of the 3×3, not by scope (row).** The
-epistemic column ("What-We-Know": privacy, honesty, societal/environmental) transfers best
-(mean AUROC 0.83); the values column ("What-Matters": autonomy, care, fairness) is intermediate
-(0.78); and the **deontic column ("Who-Decides": rights, physical-harm, legitimacy) transfers
-worst (0.60)** and contains all three lowest-scoring dimensions. We argue this reflects a real
-property of the moral domain rather than an artifact: deontic concepts encode *entitlements granted
-by a governing framework*, which are jurisdiction-relative, whereas epistemic and (most) value
-concepts track more universal states of the world. `rights_respect` is the extreme case — a right
-is what a *legitimate* order grants, so rights are legitimacy-indexed — and even a stratified test
-restricted to the most universal right (bodily integrity: European-Convention inhuman-treatment vs.
-US excessive-force) fails to transfer, suggesting rights case-facts live in incommensurable legal
-contexts. We report the method (cross-corpus contrastive training, an adversarial bag-of-words
-control, dual-judge label-noise ceilings, and pre-registered bars), the negative results in full,
-and the threats to validity, and we invite critique of the column-transferability hypothesis.
-
----
+We set out to build a *perception layer* for an AI-ethics engine: nine sentence-embedding encoders,
+one per dimension of a 3×3 "MoralVector" taxonomy (scope × mode). We validate each **across
+datasets** — training on ≥2 independent corpora per dimension and testing on held-out cross-corpus
+pairs — because within-corpus performance is deceptive (earlier single-corpus encoders scored
+0.75–0.955 within their training corpus yet collapsed to ~0.5 on a second corpus). Under a
+pre-registered, baseline-relative gate (beat an untrained null *and* a bag-of-words null by ≥0.10),
+**eight of nine dimensions pass and one — `rights_respect` — fails across four corpus
+configurations.** Two additional controls then reshape the interpretation. A **9×9 transfer matrix**
+(each encoder evaluated on every dimension) shows that **dimension-specificity tracks corpus
+independence, not the taxonomy**: the four dimensions with independent corpora (privacy,
+environmental, autonomy, physical_harm) are diagonal-dominant and specific, while the four sharing a
+single corpus family (care, fairness, legitimacy, epistemic — all from Social-Chem + ETHICS)
+cross-contaminate, each firing on the others. A **valence-pool baseline** makes the collapse
+decisive: an encoder trained on the pooled valence of the four shared-corpus dimensions *matches or
+beats* all four dedicated encoders (gaps −0.01 to −0.12) while failing on the four independent ones
+(gaps +0.17 to +0.42) — those four are not four concepts but **one**. Both controls converge with an
+independent rank test in implying the nine named dimensions occupy only **~5 effective axes** (a
+general commonsense-valence factor + privacy, environmental, autonomy, physical_harm), plus rights
+(which does not train). A cross-encoder replication then rules out the obvious objection that this is
+a capacity artifact: a **4×-larger decoder embedder (gte-Qwen2-1.5B)** reproduces the same
+care↔legitimacy collapse (cross-transfer ≥ within) and the same privacy separation, so the ~5-axis
+structure is a property of the **data and labels, not the encoder**. We therefore argue the
+load-bearing variable is **corpus independence**:
+cross-dataset transfer *and* concept-distinctness both require it. The originally-striking "deontic column transfers worst" pattern is **confounded**
+with corpus-sharing and is offered only as a hypothesis. The one robust concept-level result is
+`rights_respect`: it fails even in a stratified, class-balanced, same-jurisdiction-adjacent design,
+consistent with rights being *framework-relative* (a right is what a legitimate order grants), with
+a small-corpus caveat. The contribution is methodological: a validation regime — cross-dataset gate
++ transfer matrix + valence baseline — that distinguishes encoders that learned a *concept* from
+those that learned a *corpus*.
 
 ## 1. Introduction
 
-AI systems that assist moral decisions increasingly rest on a *perception layer*: a component that
-reads a situation and scores morally relevant features ("this harms someone," "this is unfair,"
-"this exposes private data"). If that layer is unreliable, everything above it is unreliable. This
-paper is about a specific, sobering discovery in building such a layer: **some moral dimensions do
-not generalize across datasets, and which ones fail is predicted by their position in a simple 3×3
-taxonomy of moral reasoning.**
+AI systems that assist moral decisions need to *read* a situation and score morally relevant
+features. This paper reports what happened when we tried to build that layer honestly — and the
+central lesson is a caution: **an encoder can pass a cross-dataset test and still not have learned
+the concept you named it after, if its two corpora share too much.** The tools that reveal this are
+a cross-dataset validation gate, an off-diagonal transfer matrix, and a generic-valence baseline.
 
-Our taxonomy (the "MoralVector," the `k`-axis of the DEME moral tensor) is a 3×3 matrix:
+Our taxonomy (the "MoralVector," the `k`-axis of the DEME moral tensor) is a 3×3 matrix — rows =
+scope {Individual, Relational, Collective}, columns = mode {What-Matters (values), Who-Decides
+(deontic), What-We-Know (epistemic)}:
 
-|            | What Matters (values) | Who Decides (deontic) | What We Know (epistemic) |
-|------------|-----------------------|-----------------------|--------------------------|
-| Individual | autonomy_respect      | rights_respect        | privacy_protection       |
-| Relational | virtue_care           | physical_harm         | epistemic_quality        |
-| Collective | fairness_equity       | legitimacy_trust      | societal_environmental   |
+|            | What Matters      | Who Decides      | What We Know         |
+|------------|-------------------|------------------|----------------------|
+| Individual | autonomy_respect  | rights_respect   | privacy_protection   |
+| Relational | virtue_care       | physical_harm    | epistemic_quality    |
+| Collective | fairness_equity   | legitimacy_trust | societal_environmental |
 
-Rows are the *scope* of a concern (whose good is at stake); columns are the *mode* (is the concern
-about values, about who is entitled to decide, or about what is known). The taxonomy is convergent
-with Moral Foundations Theory and Curry's Morality-as-Cooperation but is organized to be spanned by
-a small set of encoders.
-
-**Contributions.** (1) A cross-dataset validation regime for moral-dimension encoders, with an
-adversarial bag-of-words control and pre-registered, label-noise-derived bars. (2) The empirical
-finding that **transferability is column-structured** — the deontic column is systematically hard.
-(3) A theory: deontic concepts are *framework-relative* (legitimacy-indexed), and a case study of
-`rights_respect` failing across four corpus configurations, including a stratified universal-core
-test. (4) A catalogue of coupling issues in the 3×3 that the transfer results expose.
-
-We present this as a *negative-result-forward* paper. The strongest thing we can say is not "we
-built nine good encoders" but "we built eight, one honestly failed, and the failure is legible."
+**Contributions.** (1) A cross-dataset validation regime with a bag-of-words control and
+pre-registered baseline-relative bars. (2) The finding that **dimension-specificity requires
+independent corpora**: four of our dimensions have them and are demonstrably distinct; four share a
+corpus and partially collapse into a shared moral-valence signal — shown by a 9×9 transfer matrix
+and a generic-valence baseline. (3) A robust negative result: `rights_respect` fails across four
+configurations, which we *hypothesize* reflects framework-relativity. (4) An honest retraction: the
+"deontic column transfers worst" pattern from the first draft is confounded with corpus-sharing.
 
 ## 2. Method
 
-### 2.1 Encoders and the cross-dataset test
+**Encoders.** Each dimension is a BGE-M3 dual-encoder (mean-pool, L2-norm) fine-tuned with InfoNCE
+on a *signed valence* label (`+` upheld, `−` violated).
 
-Each dimension's encoder is a BGE-M3 dual-encoder (mean-pooled, L2-normalized) fine-tuned with an
-InfoNCE contrastive objective. The unit of supervision is a *signed valence*: each text is labeled
-`+` (the dimension is upheld) or `−` (violated). The **honest metric is cross-dataset**: we train on
-≥2 independent corpora per dimension and evaluate held-out AUROC on structural pairs whose anchor is
-drawn from one corpus and whose same/different-sign comparisons are drawn from the *other* corpus.
+**Cross-dataset validation.** We train on ≥2 corpora per dimension and draw every training positive
+from a *different* corpus than its anchor (`JointPairSource`); held-out AUROC is thus cross-corpus
+by construction. An optional gradient-reversal domain adversary was included but rarely
+de-confounded (domain accuracy stayed ~1.0), so it is not load-bearing.
 
-This matters because single-corpus fine-tuning is deceptive. In earlier work every feeder scored
-0.75–0.955 *within* its training corpus yet collapsed to ~0.47–0.55 (chance) on a second corpus of
-the same dimension: the encoders had learned corpus surface, not moral structure.
+**Labels.** Native where available (Social-Chem judgment sign; ETHICS; ECHR article-violation;
+toxicity/manipulation binaries); a dual-LLM-judge pipeline (`qwen3` + `glm-5`, temp 0, averaged)
+where not (privacy, environmental, CourtListener rights). LLM labels are a threat to validity (§6).
 
-### 2.2 Cross-corpus positives (`JointPairSource`)
-
-The fix is to draw every training positive from a *different* corpus than its anchor: to pull an
-A-text next to a same-sign B-text, the encoder cannot exploit A's surface — only structure the two
-corpora share. Held-out AUROC is then cross-corpus by construction. An optional gradient-reversal
-domain-adversary (DANN) was included but, empirically, rarely de-confounded (the domain classifier
-usually stayed at ~100% accuracy); the cross-corpus positives, not the adversary, do the work.
-
-### 2.3 Labels
-
-Where corpora carried signed labels we used them (Social-Chem-101 moral-judgment sign; the ETHICS
-benchmark; ECHR article-violation labels; toxicity/manipulation binaries). Where they did not
-(privacy, environmental, and the CourtListener rights facts), we generated signs with a **dual-judge
-pipeline** (two independent LLMs, `qwen3` and `glm-5`, temperature 0), averaging their signed
-valence. This is a genuine threat to validity (§6) and we treat it as such.
-
-### 2.4 Adversarial baselines and pre-registered bars
-
-Two controls run in every gate, on the *same* held-out pairs:
-
-- **Untrained null:** the base encoder's cross-dataset AUROC (typically ~0.5).
-- **Bag-of-words null:** AUROC of TF-IDF cosine predicting same-structure. If the encoder barely
-  beats bag-of-words, its "moral" signal is vocabulary.
-
-A dimension is **VALIDATED** iff its cross-dataset AUROC beats *both* nulls by a pre-registered
-margin (0.10). We chose this **baseline-relative** policy over an absolute label-noise ceiling after
-discovering the latter is ill-posed here: a within-corpus noise ceiling (max AUROC achievable
-against noisy labels) is not comparable to a *cross*-corpus AUROC, which additionally pays for
-genre/jurisdiction gap. (We also caught and discarded a naïve noise estimator: Social-Chem's
-`rot-agree` conflates rule-*applicability* agreement with *sign* correctness and overstated label
-noise ~24×; a direct dual-judge sign-agreement estimate gave, e.g., 0.971 agreement on care →
-label-flip ε≈0.015 → ceiling 0.878, against which our care model, 0.811, sits sensibly below.)
-Bars are committed to version control *before* the validation run; the discipline is that a bar may
-be tightened but never loosened after seeing a result, so git history is the pre-registration
-record. Bar provenance is bound into a hash-chained audit artifact.
+**Controls.**
+- *Untrained null* and *bag-of-words null* (TF-IDF cosine AUROC on the same held-out pairs). A
+  dimension is VALIDATED iff it beats **both** by a pre-registered margin (0.10). We chose this
+  baseline-relative policy over a label-noise ceiling because a within-corpus ceiling is not
+  comparable to a cross-corpus AUROC (bars, nulls, and margin are committed to git before the run;
+  they may be tightened, never loosened).
+- *9×9 transfer matrix*: evaluate each trained encoder on **every** dimension's held-out pairs.
+  Diagonal-dominance ⇒ concept-specificity; off-diagonal mass ⇒ shared structure.
+- *Generic-valence baseline*: one encoder trained on `+/−` valence pooled across all dimensions,
+  then evaluated per dimension. If it matches a per-dimension encoder, that dimension is "just
+  valence."
 
 ## 3. Results
 
-### 3.1 The scorecard
+### 3.1 The cross-dataset scorecard (8/9 pass)
 
-Cross-dataset held-out AUROC, with both nulls and the baseline-relative verdict (margin 0.10):
+Cross-dataset held-out AUROC with both nulls and the baseline-relative verdict:
 
-| dimension | 2nd-corpus pairing | baseline | **cross** | BoW | margin | verdict |
+| dimension | corpora | baseline | cross | BoW | margin | verdict |
 |---|---|---:|---:|---:|---:|---|
-| privacy_protection | privacy-RoTs + AITA scenarios | 0.551 | **0.853** | 0.542 | +0.31 | PASS |
-| epistemic_quality | Social-Chem-honesty + ETHICS | 0.483 | **0.817** | 0.529 | +0.29 | PASS |
-| societal_environmental | ClimateBERT + dual-judged env-claims | 0.426 | **0.817** | 0.483 | +0.33 | PASS |
-| virtue_care | Social-Chem-care + ETHICS | 0.469 | **0.811** | 0.527 | +0.28 | PASS |
-| fairness_equity | Social-Chem-fairness + ETHICS | 0.474 | **0.789** | 0.510 | +0.28 | PASS |
-| autonomy_respect | ec-darkpattern + MentalManip | 0.515 | **0.747** | 0.529 | +0.22 | PASS |
-| legitimacy_trust | Social-Chem-authority + ETHICS | 0.523 | **0.708** | 0.533 | +0.18 | PASS |
-| physical_harm | BeaverTails + ETHICS-harm | 0.499 | **0.622** | 0.462 | +0.16 | PASS |
-| rights_respect | ECHR + ETHICS-justice | 0.517 | **0.475** | 0.487 | −0.01 | **FAIL** |
+| privacy_protection | privacy-RoTs + AITA | 0.55 | 0.853 | 0.54 | +0.31 | PASS |
+| epistemic_quality | Social-Chem + ETHICS | 0.48 | 0.817 | 0.53 | +0.29 | PASS |
+| societal_environmental | ClimateBERT + dual-judged claims | 0.43 | 0.817 | 0.48 | +0.33 | PASS |
+| virtue_care | Social-Chem + ETHICS | 0.47 | 0.811 | 0.53 | +0.28 | PASS |
+| fairness_equity | Social-Chem + ETHICS | 0.47 | 0.789 | 0.51 | +0.28 | PASS |
+| autonomy_respect | ec-darkpattern + MentalManip | 0.52 | 0.747 | 0.53 | +0.22 | PASS |
+| legitimacy_trust | Social-Chem + ETHICS | 0.52 | 0.708 | 0.53 | +0.18 | PASS |
+| physical_harm | BeaverTails + ETHICS-harm | 0.50 | 0.622 | 0.46 | +0.16 | PASS |
+| rights_respect | ECHR + ETHICS-justice | 0.52 | 0.475 | 0.49 | −0.01 | FAIL |
 
-The bag-of-words null is near chance (0.46–0.54) on every dimension, so the eight passing encoders
-capture provably **non-lexical** structure — the cross-corpus construction that trains them is also
-what starves bag-of-words (an A-anchor and its same-sign B-positive share little vocabulary). This
-is our strongest defense against the "it just memorized valence-words" objection.
+Bag-of-words is near chance throughout, so the passing encoders are not explained by our lexical
+baseline. This *motivated* the first draft's story — but it does not, by itself, show the encoders
+learned *distinct* concepts. That needs the transfer matrix.
 
-### 3.2 The column effect (the headline)
+### 3.2 The 9×9 transfer matrix — the pivotal result
 
-Grouping the cross-dataset AUROCs by the 3×3:
+Rows = trained-on, columns = evaluated-on (diagonal = self):
 
-| mode (column) | dimensions | mean cross-dataset AUROC |
-|---|---|---:|
-| What-We-Know (epistemic) | privacy, epistemic, societal/env | **0.829** |
-| What-Matters (values) | autonomy, care, fairness | **0.782** |
-| **Who-Decides (deontic)** | rights, physical_harm, legitimacy | **0.602** |
+```
+train↓ / eval→   priv   epis   env   care   fair   auto  legit  harm  rights
+privacy          0.858  0.49  0.41  0.52  0.52  0.49  0.52  0.49  0.50
+epistemic        0.52   0.843 0.44  0.75  0.68  0.54  0.66  0.48  0.49
+environmental    0.56   0.41  0.817 0.45  0.44  0.53  0.48  0.49  0.44
+care             0.55   0.871 0.46  0.825 0.77  0.51  0.74  0.39  0.50
+fairness         0.51   0.853 0.51  0.80  0.788 0.51  0.69  0.40  0.48
+autonomy         0.52   0.48  0.43  0.49  0.50  0.726 0.53  0.50  0.48
+legitimacy       0.52   0.822 0.46  0.75  0.70  0.48  0.671 0.43  0.46
+physical_harm    0.54   0.44  0.43  0.51  0.50  0.56  0.50  0.626 0.48
+rights           0.66   0.50  0.53  0.49  0.50  0.48  0.50  0.51  0.468
+```
 
-| scope (row) | dimensions | mean cross-dataset AUROC |
-|---|---|---:|
-| Individual | autonomy, rights, privacy | 0.692 |
-| Relational | care, physical_harm, epistemic | 0.750 |
-| Collective | fairness, legitimacy, environmental | 0.771 |
+Two groups fall out cleanly, split by **corpus independence, not by the taxonomy**:
 
-**Transferability is organized by column (mode), not row (scope).** The column means are spread
-0.60–0.83 and the three lowest-scoring dimensions in the entire framework — rights (0.475),
-physical_harm (0.622), legitimacy (0.708) — are exactly the deontic column. Row means are compressed
-(0.69–0.77) with no monotone structure. This is the paper's central claim, and we flag it as a
-hypothesis: with n=9 (three per column) it is a striking pattern, not an established law (§6).
+- **Specific** (diagonal-dominant, off-diagonals ~0.4–0.55): **privacy, environmental, autonomy,
+  physical_harm** — each with its *own* corpora. Their encoders fire only on their own dimension.
+- **Collapsed**: **care, fairness, legitimacy, epistemic** — all from Social-Chem + ETHICS. The
+  diagonal is not even the maximum: `care→epistemic 0.871 > care→care 0.825`; `fairness→epistemic
+  0.853 > fairness→fairness 0.788`; `legitimacy→epistemic 0.822 > legitimacy→legitimacy 0.671`.
+  These four fire on each other, with epistemic as the attractor — they share a corpus-specific
+  "commonsense-moral valence," not four distinct concepts.
 
-### 3.3 Case study: `rights_respect` fails across four configurations
+Notably, the couplings we *predicted from theory* (care↔harm; fairness↔rights) do **not** appear —
+`care→harm` is 0.39 (below chance), because harm's independent corpus separates it. The actual
+coupling is the shared-corpus family.
 
-Rights is the deontic column's extreme case. We attempted four cross-dataset configurations:
+### 3.3 Valence-pool baselines — the family collapses into one concept
 
-1. **ECHR ↔ ETHICS-justice** (European case-facts ↔ everyday justice scenarios). AUROC 0.475;
-   training loss flat at chance throughout — cross-genre, no shared structure.
-2. **ECHR ↔ CourtListener US civil-rights** (same genre, cross-jurisdiction). We improved the
-   CourtListener extraction to target the *facts* section (cutting neutral dual-judge labels from
-   87%→68%). AUROC 0.475; loss flat.
-3. **ECHR ↔ CourtListener, class-balanced.** Rights litigation is overwhelmingly about
-   *violations*, so the "respected" class was starved (+1,346 / −10,070). We mined the positive
-   class specifically — civil-rights opinions whose *holdings* found no violation / granted
-   qualified immunity — and dual-judge-confirmed 408 rights-respected cases (66% of candidates).
-   Loss still flat.
-4. **Stratified universal-core** (ECHR Articles 2–3, life/inhuman-treatment ↔ US excessive-force).
-   Motivated by the observation that ECHR's aggregate "any-article-violated" label lumps
-   incommensurable rights (its `−` class is 4,704 fair-trial + 1,421 property + 1,349
-   inhuman-treatment + …). Restricting to a single, maximally universal right-type should make the
-   cross-corpus positives coherent. Loss still flat (baseline 0.521).
+Two pooled encoders, each trained on `+/−` valence pooled across a set of dimensions, then evaluated
+per dimension:
 
-Four configurations, one identical flat-loss signature. The method rehabilitated eight dimensions
-and the bag-of-words control proves those are real; rights is not a method failure.
+- **All-dimension pool** (positives paired across *all* dimensions): near chance (0.46–0.54) on
+  every dimension. This shows no *universal* good-vs-bad axis captures anything — but the pairing is
+  incoherent (privacy-'+' with harm-'+'), so it is weak evidence on its own.
+- **Family pool** (care + fairness + legitimacy + epistemic only — the four sharing Social-Chem +
+  ETHICS; positives are coherent *within* this family):
+
+  | dimension | dedicated encoder | family pool | gap |
+  |---|---:|---:|---:|
+  | virtue_care | 0.825 | 0.834 | **−0.009** |
+  | fairness_equity | 0.788 | 0.799 | **−0.011** |
+  | legitimacy_trust | 0.671 | 0.795 | **−0.124** |
+  | epistemic_quality | 0.843 | 0.914 | **−0.071** |
+  | privacy_protection | 0.858 | 0.488 | +0.370 |
+  | societal_environmental | 0.817 | 0.394 | +0.423 |
+  | autonomy_respect | 0.726 | 0.533 | +0.193 |
+  | physical_harm | 0.626 | 0.459 | +0.167 |
+
+  **A single encoder trained on the pooled family valence matches or *beats* all four dedicated
+  family encoders** (it is markedly better at legitimacy, 0.795 vs 0.671, and epistemic, 0.914 vs
+  0.843), while failing completely on the four independent-corpus dimensions. This is decisive:
+  care/fairness/legitimacy/epistemic are **not four concepts but one** — a shared commonsense-moral
+  valence — and the four independent-corpus dimensions are genuinely distinct from it and from each
+  other (§3.2).
+
+**Convergent evidence for a lower-rank moral space.** Under both the transfer matrix (§3.2) and the
+family pool, the nine named dimensions reduce to **~five empirically-distinct axes**: {a shared
+commonsense-valence factor collapsing care/fairness/legitimacy/epistemic, privacy, environmental,
+autonomy, physical_harm}, plus rights (which does not train). This agrees with an independent
+empirical rank test on scored MoralVectors (a bifactor structure: one dominant general
+"moral-loading" factor + ~5 specifics; effective rank ≈ 3–6). Two unrelated methods — rank analysis
+on the scored vectors, and encoder transfer/pooling — converge on a general valence factor plus a
+handful of specifics.
+
+### 3.4 `rights_respect` fails across four configurations
+
+(1) ECHR ↔ ETHICS-justice: 0.475, flat loss. (2) ECHR ↔ CourtListener US civil-rights (facts-
+targeted extraction): 0.475, flat. (3) ECHR ↔ CourtListener, class-balanced by mining 408 dual-
+judge-confirmed no-violation/qualified-immunity holdings: flat. (4) Stratified universal-core (ECHR
+Art 2–3 ↔ US excessive-force), with and without the adversary: flat loss across 5+ epochs, final
+AUROC **0.506** (one adversarial run's *training* loss briefly collapsed to 0.54 but did not improve
+held-out AUROC — an unstable outlier). Four configurations, one persistent failure.
+
+### 3.5 Encoder invariance — the collapse survives a 1.5B decoder
+
+The natural objection to §3.2–3.3 is *capacity*: perhaps BGE-M3 (560M, encoder-only) is simply too
+weak to tell care from legitimacy, and a larger model would separate them. We test this with
+**gte-Qwen2-1.5B**, a decoder-based embedder ~4× the parameters from a different architecture family,
+full-fine-tuned with the identical `JointPairSource` + InfoNCE recipe on three dimensions: the two
+shared-corpus family members most at issue (**care, legitimacy**) and one independent-corpus control
+(**privacy**). A 3×3 cross-transfer (rows = trained encoder, columns = held-out eval; diagonal =
+within):
+
+```
+enc↓ / eval→     care    legit  privacy
+care            0.793   0.761   0.513
+legit           0.807   0.734   0.525
+privacy         0.484   0.537   0.758
+```
+
+The structure is unchanged from BGE-M3. **The care↔legitimacy collapse persists**: the symmetric
+cross-AUROC (0.784) *equals or exceeds* the within-AUROC (min 0.734) — the legitimacy encoder scores
+**0.807 on care**, higher than the care encoder scores on itself (0.793) and higher than legitimacy
+on itself (0.734). The two encoders remain interchangeable; there is no care-specific structure a
+bigger model recovered. **Privacy stays distinct**: privacy↔care gap +0.26, privacy↔legitimacy gap
++0.20; privacy's encoder is at chance (0.48–0.54) on the family dimensions and both family encoders
+are at chance (0.51–0.53) on privacy. A 4×-larger, architecturally-different encoder reproduces
+*both* the collapse and the separation. The ~5-effective-axis structure is therefore a property of
+the **data and labels**, not of BGE-M3's capacity — closing the most obvious reviewer objection.
+
+*Caveat.* gte-Qwen2 was loaded as a native **causal** `Qwen2Model` (the vendor's bidirectional
+inference code hard-requires `flash_attn`, which we bypassed), so this is "gte-Qwen2 weights with
+last-token causal pooling," not the exact vendor embedder; and we replicated three dimensions, not
+the full nine. Both are consistent with the narrow claim tested here — encoder capacity/architecture
+does not dissolve the shared-corpus collapse — but a full-nine, bidirectional replication remains
+future work.
 
 ## 4. Interpretation
 
-### 4.1 The deontic column is framework-relative
+**The primary finding is methodological: corpus independence is necessary for a dimension-specific
+encoder.** Cross-dataset AUROC alone (§3.1) passed all four shared-corpus dimensions; only the
+transfer matrix revealed they had learned a shared valence. Any framework that scores multiple moral
+dimensions from overlapping corpora risks measuring one thing under many names.
 
-Values (care, fairness, autonomy) and epistemic states (privacy-as-exposure, honesty,
-environmental facts) track features that are *largely universal*: cruelty, deception, and
-data-exposure are recognizable across cultures and corpora. Deontic concepts are different: **a
-right is an entitlement conferred by a governing order; legitimacy is the validity of that order;
-welfare-as-duty is what the order owes.** These are *indexed to a framework*, so their surface
-realizations differ not just in wording but in the institutional context that gives them meaning.
-The prediction — deontic dimensions transfer worst — is what we observe.
+**The rights failure is the robust concept-level result.** We *hypothesize* it reflects
+framework-relativity: a right is an entitlement conferred by a *legitimate* order, so specific rights
+are jurisdiction-relative, and case-facts are embedded in incommensurable legal contexts even for
+the same underlying right. `rights_respect` and `legitimacy_trust` are coupled in the taxonomy
+(same deontic column), consistent with this. But we cannot exclude that rights needs longer context,
+article-specific labels, within-jurisdiction pairing, or better labels (§6).
 
-### 4.2 Rights are legitimacy-indexed (a coupling, not an independence)
+**An alternative hypothesis worth testing** (due to the reviewer): the real axis may not be
+"deontic vs not" but **conduct/harm-level labels transfer better than institutionally-mediated
+entitlement labels.** Privacy supports this — it transfers well when framed as exposure-*harm* even
+though privacy is legally a *right*. This is possibly stronger and more defensible than the column
+claim, and we flag it as the successor hypothesis.
 
-`rights_respect` and `legitimacy_trust` occupy the same deontic column (Individual vs. Collective
-scope). They are coupled by construction: *specific* rights vary because they are granted by
-*specific* legitimate orders. This predicts that rights should be the hardest dimension to transfer
-across jurisdictions — and that even its most universal stratum (bodily integrity, which every
-legitimate order nominally protects) may fail if the *case facts* are embedded in
-jurisdiction-specific legal contexts (European detention/deportation vs. US police encounters). The
-stratified test (config 4) is consistent with this stronger claim, though the small US-force sample
-(369) leaves scarcity as a partial confound.
+**Retraction from the first draft.** We had reported that transfer is organized by the taxonomy's
+*column* (epistemic > values > deontic). The 9×9 matrix shows this is **confounded with
+corpus-sharing**: three of the four "hard" (low) dimensions are either the shared-corpus family or a
+persistent failure. We withdraw the column claim as anything more than a hypothesis to be tested
+after the shared-corpus confound is removed.
 
-### 4.3 The privacy lesson: score the universal valence, not the legal category
-
-Privacy is *legally* a right (ECHR Article 8 is literally "right to private life"), so one might
-expect it to inherit rights' framework-relativity. Yet `privacy_protection` transfers best of all
-(0.853). The reason is instructive: our privacy corpora encode privacy-as-**exposure-harm** ("was
-personal information disclosed?" — universal), not privacy-as-legal-**right** (GDPR vs. US sectoral
-rules — framework-relative). **The transferable signal is the universal valence beneath the legal
-category.** This suggests the remedy for deontic dimensions is to target the underlying universal
-good/harm rather than the jurisdiction-specific entitlement — and it is exactly what the failed
-rights corpora do *not* do (court facts are irreducibly legal).
-
-### 4.4 Other couplings the transfer results expose
-
-- **care ↔ physical_harm** are near-inverse poles of one welfare axis (Relational row): protect vs.
-  damage bodily/emotional welfare. They may be one signed dimension double-counted as two; an
-  independence check (do their encoders' scores anti-correlate on shared scenarios?) is warranted.
-- **fairness ↔ rights** collide on non-discrimination (ECHR Art. 14; US Equal Protection): a
-  discrimination case is both, and our civil-rights corpus overlaps both — a potential
-  double-counting that also muddies the rights labels.
-- **autonomy ↔ legitimacy via consent** (Individual/values ↔ Collective/deontic): consent is
-  autonomy exercised; legitimacy is "consent of the governed." A genuine cross-cell dependency.
-- **epistemic_quality is a meta-dimension** for its column: honesty gates whether privacy and
-  environmental claims can be trusted at all.
-- **societal_environmental is a compound** (societal-harm + environmental-impact), internally
-  heterogeneous and a candidate to split.
-
-## 5. Implications for architecture
-
-1. **Treat deontic dimensions as framework-conditioned**, not universal. Either stratify to a
-   universal core, condition the encoder on the legitimacy framework, or score the underlying
-   universal valence (the privacy strategy) rather than the legal category.
-2. **Do not assume the 3×3 dimensions are independent.** At minimum, test care↔harm independence and
-   resolve which dimension owns non-discrimination.
-3. **Report transferability, not within-corpus fit.** Within-corpus AUROC is not evidence of a real
-   dimension; the bag-of-words and untrained nulls should be standing metrics.
+## 5. Implications
+1. **Give every dimension independent corpora** before claiming it is a distinct concept. Our
+   care/fairness/legitimacy/epistemic dimensions must be re-run with independent second corpora.
+2. **Report the transfer matrix and a valence baseline**, not just cross-dataset AUROC.
+3. **Treat rights (and likely the deontic dimensions) as candidate framework-relative concepts** —
+   possibly requiring jurisdiction conditioning or conduct-level (not entitlement-level) labels.
 
 ## 6. Threats to validity
+- **The column claim is retracted to a hypothesis** (small n; confounded with corpus-sharing).
+- **Shared corpora** for four dimensions is the central confound the transfer matrix exposes; until
+  fixed, those four are not established as distinct.
+- **Dual-LLM-judge labels** (privacy, environmental, rights) may share bias; human audit needed
+  (planned: ~100–200 items/slice, report human↔LLM agreement, not only LLM↔LLM).
+- **Rights confounds**: the stratified US-force slice was small (369); scarcity is not fully ruled
+  out. Within-jurisdiction pairing and article-specific ECHR labels are the cleanest next tests.
+- **Pseudo-replication**: AUROC is over structural pairs; text-level bootstrap CIs and per-dimension
+  (n_pos, n_neg, unique-anchor, pair) counts are needed and not yet reported. Held-set sizes ranged
+  410–1200 pairs per dimension.
+- **Single encoder/objective** (BGE-M3 + InfoNCE): partially addressed (§3.5). A 4×-larger decoder
+  (gte-Qwen2-1.5B) reproduces the care↔legitimacy collapse and the privacy separation on a 3-dim
+  slice, so the *collapse* is not a BGE-M3 capacity artifact; a full-nine, bidirectional-mode
+  replication is still outstanding.
+- **Keyword-based** foundation and stratum filters are coarse.
 
-- **Small n for the column claim.** Three dimensions per column. The 0.60/0.78/0.83 ordering is
-  suggestive but could shift with different corpora; it is a hypothesis to be tested with more
-  dimensions and more corpus pairings, not an established result.
-- **Dual-LLM-judge labels.** Privacy, environmental, and the CourtListener rights signs are LLM
-  labels. Two LLMs may share systematic bias, inflating apparent agreement and thus the label-noise
-  ceiling; human-annotation validation is needed.
-- **Confounds in the rights failure.** Config 4's US-force slice was small (369); scarcity cannot be
-  fully ruled out. A within-US stratified pairing (excessive-force ↔ wrongful-detention, same
-  jurisdiction) would isolate jurisdiction-gap from right-type mixing and is the cleanest next test.
-- **Corpus construction.** The Social-Chem/ETHICS foundations share the "commonsense-morality
-  vignette" genre; some transferability there may be genre similarity, not concept universality. We
-  partially mitigate with the bag-of-words control (which is near chance), but this is not airtight.
-- **Encoder and objective are fixed** (BGE-M3 + InfoNCE). We have not shown the column effect is
-  invariant to encoder choice.
-- **Keyword stratification** (config 4's force-keyword filter; the foundation keyword filters) is
-  coarse and could introduce selection effects.
-
-## 7. Open questions (for reviewers)
-
-1. Is the column effect real, or an artifact of which corpora happen to exist for each dimension?
-   What corpus design would falsify it?
-2. Is `rights_respect` legitimately *unlearnable* cross-jurisdiction, or would a within-jurisdiction
-   feeder (validated only on US law) be the honest unit — and if so, does "one rights encoder"
-   even make sense, or must rights be jurisdiction-indexed?
-3. Should the deontic column be modeled relationally (rights conditioned on legitimacy) rather than
-   as independent axes?
-4. Is care↔harm one signed dimension? Does collapsing them improve or harm downstream calibration?
-5. Does the "universal valence beneath the legal category" strategy generalize — can we build a
-   rights encoder on *conduct* (was a person brutalized / detained / silenced) rather than on *legal
-   holdings*, and would that transfer where case-law does not?
+## 7. Open questions
+1. Do the four shared-corpus dimensions become distinct when given *independent* corpora — or is
+   the ~5-dimensional collapse a property of the moral space rather than the data? (The family-pool
+   control already confirms they collapse *under shared corpora*; this asks whether independence
+   separates them.)
+3. Is rights unlearnable cross-jurisdiction, or only under aggregate labels / short context / this
+   encoder? Does a conduct-level rights label ("was someone brutalized/detained/silenced") transfer
+   where case-law does not?
+4. Is the (confounded) column pattern real once corpus-sharing is removed?
+5. Does a stronger encoder separate the shared-corpus family that BGE-M3 collapses? *(Answered, §3.5:
+   no — gte-Qwen2-1.5B reproduces the care↔legitimacy collapse. Open for the full nine dimensions in
+   bidirectional mode.)*
 
 ## 8. Conclusion
 
-Building a moral-perception layer forced a reckoning: not all moral dimensions are equally
-learnable, and the pattern of which ones fail is not random. Transferability tracks the *mode* of
-moral concern — epistemic > values > deontic — and the deontic column's difficulty appears to be a
-real consequence of its framework-relativity, with `rights_respect` as the limiting case, coupled to
-legitimacy and resistant across four corpus configurations. We offer the eight validated encoders,
-the one honest failure, and the column hypothesis as an invitation: the most useful outcome would be
-for someone to falsify the column claim, or to show that rights *can* be made to transfer by scoring
-conduct rather than law. Either would advance a perception layer that a safety-critical ethics
-engine can actually stand on.
+Cross-dataset validation rescued eight of nine encoders from the illusion of within-corpus success —
+but a transfer matrix then showed that four of the eight had learned a *shared corpus*, not a
+*distinct concept*. The durable lesson is a methodological one: **to show an encoder learned the
+moral dimension you named it after, it is not enough to beat a lexical baseline across two corpora;
+the two corpora must be independent, and you must show the encoder does not fire on its neighbors.**
+`rights_respect` remains the one dimension that resists every configuration, which we offer — with
+appropriate caution — as possible evidence that some moral concepts are framework-relative and may
+not admit a single, jurisdiction-independent encoder at all.
 
-## Acknowledgements & reproducibility
+## Reproducibility & acknowledgements
 
-Encoders, the cross-dataset training harness, the bag-of-words control, and the pre-registered bars
-are in `github.com/ahb-sjsu/xbse`; the per-dimension corpus map is in
-`experiments/data_sourcing_plan.md`. The experimental pipeline (corpus assembly, dual-judge
-labeling, training runs) was executed with substantial AI-assisted automation; all numerical results
-are reproducible from the committed code and the documented corpora. This is a working draft
-circulated for critique; the author welcomes correction, especially of the column-transferability
-hypothesis and the dual-judge labeling.
-
-## Selected references
-
-- Forbes et al. *Social Chemistry 101.* EMNLP 2020.
-- Hendrycks et al. *Aligning AI With Shared Human Values (ETHICS).* ICLR 2021.
-- Chalkidis et al. *LexGLUE.* ACL 2022. (ECHR `ecthr_a`.)
-- Sap et al. *Social Bias Frames (SBIC).* ACL 2020.
-- Ji et al. *BeaverTails.* NeurIPS 2023.
-- Graham, Haidt et al. *Moral Foundations Theory.*
-- Curry et al. *Morality-as-Cooperation.*
-- Ganin & Lempitsky. *Domain-Adversarial Training (DANN).* ICML 2015.
-- Xiao et al. *BGE-M3.* 2024.
+Code, the cross-dataset harness, the bag-of-words control, pre-registered bars, and the transfer-
+matrix / valence-baseline scripts are in `github.com/ahb-sjsu/xbse`; per-dimension corpora in
+`experiments/data_sourcing_plan.md`. The experimental pipeline was executed with substantial
+AI-assisted automation; results are reproducible from the committed code and documented corpora.
+Circulated for critique — the author especially welcomes attempts to falsify the corpus-independence
+claim and the rights framework-relativity hypothesis, and thanks the reviewer whose insistence on a
+dimension-specificity test produced this paper's central result.
