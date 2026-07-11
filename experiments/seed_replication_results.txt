@@ -1,0 +1,13 @@
+3-seed replication of the §3.7 marginal cell (care_v2 <-> fair_v2). scripts/run_v2_seeds.py,
+Atlas GPU-1, BGE-M3, 2026-07-10. Closes reviewer-6/7's top open item: does the weakest decoupling
+verdict (+0.16, within ~1-2 retrain-sigma of the +0.10 threshold) survive retrain variance?
+
+seed 0:  care->care 0.839  fair->fair 0.912 | care->fair 0.701  fair->care 0.658 | cross 0.680  min-within 0.839  GAP +0.160
+seed 1:  care->care 0.860  fair->fair 0.921 | care->fair 0.720  fair->care 0.610 | cross 0.665  min-within 0.860  GAP +0.195
+seed 2:  care->care 0.850  fair->fair 0.919 | care->fair 0.747  fair->care 0.648 | cross 0.697  min-within 0.850  GAP +0.153
+
+=== care_v2<->fair_v2 gap over 3 seeds: +0.169 ± 0.022 (gaps [0.160, 0.195, 0.153]) ===
+
+VERDICT: all three seeds >= +0.15; mean +0.169 clears the +0.10 threshold by ~3 sd (sd 0.022).
+The weakest §3.7 decoupling verdict is NOT an artifact of the retrain/re-eval sigma ~0.03-0.05 (§3.1);
+the larger cells (+0.28..+0.32, 0.87->0.42 before/after) never were.

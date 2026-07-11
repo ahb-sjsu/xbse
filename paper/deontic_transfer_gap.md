@@ -425,6 +425,11 @@ register-controlled test (open question 2), which this experiment does not disch
 now causal (shared corpus → collapse, by intervention+control); the other half (independence → distinct
 *concepts*) is not yet.
 
+**Seed-replicated (the marginal verdict survives retrain variance).** The weakest cell —
+`care_v2↔fair_v2`, gap +0.16 — was re-run over **3 retrain seeds**: gap **+0.169 ± 0.022** (seeds
+0.160 / 0.195 / 0.153), all three ≥ +0.15. It clears the +0.10 threshold by ~3 sd, so this cell is not
+an artifact of the σ ≈ 0.03–0.05 retrain variance (§3.1); the larger cells never were.
+
 *Caveats (pre-committed).* Care's corpus (Moral-Stories) is *partial*-independence — its norms are a
 Social-Chem subset, so only its narrative text is independent — which is why **fairness/MHS is the clean
 flagship**; both arms agree. Legitimacy and epistemic stay collapsed only for want of clean independent
@@ -492,9 +497,9 @@ after the shared-corpus confound is removed.
   autonomy 0.747→0.699, rights 0.475→0.502 — giving **σ ≈ 0.03–0.05** (§3.1). Applied to §3.7, the two
   *marginal* verdicts — the weakest decoupling (`care_v2↔fair_v2` gap +0.16) and the kept-shared
   control (−0.03) — sit within ~1–2 σ of their thresholds; the large cells (+0.28 to +0.32, and the
-  0.87→0.42 before/after) are safe at many σ. A 3-seed replication of the marginal cell is **in
-  progress** (`scripts/run_v2_seeds.py`; seed 0 reproduces +0.16) and its mean ± sd will land in §3.7;
-  meanwhile "confirmed" rests on the large cells plus the intervention-with-control logic, not on +0.16.
+  0.87→0.42 before/after) are safe at many σ. A 3-seed replication of the marginal cell
+  (`scripts/run_v2_seeds.py`) **confirms it**: gap +0.169 ± 0.022 (seeds 0.160 / 0.195 / 0.153),
+  clearing +0.10 by ~3 sd — so even the weakest verdict survives retrain variance.
 - **Dual-LLM-judge labels** (privacy, environmental, rights) may share bias; human audit needed
   (planned: ~100–200 items/slice, report human↔LLM agreement, not only LLM↔LLM).
 - **Rights confounds**: the stratified US-force slice was small (369); scarcity is not fully ruled

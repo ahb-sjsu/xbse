@@ -46,22 +46,34 @@ ADJ = ("You are a content moderator. Does this user post violate a policy agains
        "content targeting a person or group? Answer with ONLY 'YES' or 'NO'.\n\nPost: {t}\n\nAnswer:")
 
 
-def llm(model, prompt):
+# NRP models are reasoning models: the YES/NO lands in `content` but only if max_tokens is large
+# enough for the thinking to finish first (max_tokens=4 truncates -> content=null). Use non-reasoning-
+# fast models (gemma-small, kimi) and parse content first, reasoning as fallback.
+INC_MODEL = os.environ.get("SIM_INC_MODEL", "gemma-small")
+DBL_MODEL = os.environ.get("SIM_DBL_MODEL", "kimi")
+
+
+def llm_msg(model, prompt):
     body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}],
-                       "temperature": 0, "max_tokens": 4}).encode()
+                       "temperature": 0, "max_tokens": 300}).encode()
     req = urllib.request.Request(URL, body,
                                  {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"})
     for _ in range(3):
         try:
-            r = json.loads(urllib.request.urlopen(req, timeout=45).read())
-            return r["choices"][0]["message"]["content"].strip().upper()
+            return json.loads(urllib.request.urlopen(req, timeout=60).read())["choices"][0]["message"]
         except Exception:
             time.sleep(3)
-    return ""
+    return {}
 
 
 def adjudicate(model, text):
-    return 1 if llm(model, ADJ.format(t=text[:700])).startswith("Y") else 0
+    m = llm_msg(model, ADJ.format(t=text[:700]))
+    for field in ((m.get("content") or ""), (m.get("reasoning") or "")):
+        u = field.upper()
+        y, n = u.rfind("YES"), u.rfind("NO")
+        if y >= 0 or n >= 0:
+            return 1 if y > n else 0
+    return 0
 
 
 # ---------- traffic ----------
@@ -111,14 +123,14 @@ for it, hs in zip(items, harm_score):
 print("[sim] engine scored via commonsense-valence axis (violation direction)", flush=True)
 
 # ---------- incumbent + double adjudication (NRP LLMs) ----------
-print("[sim] incumbent adjudication (qwen3)...", flush=True)
+print(f"[sim] incumbent adjudication ({INC_MODEL})...", flush=True)
 for j, it in enumerate(items):
-    it["inc"] = adjudicate("qwen3", it["text"])
+    it["inc"] = adjudicate(INC_MODEL, it["text"])
     if (j + 1) % 60 == 0:
         print(f"   {j+1}/{N}", flush=True)
 sub = rng.choice(N, max(20, N // 5), replace=False)
-print(f"[sim] double-adjudication audit (glm-5) on {len(sub)} items...", flush=True)
-dbl = {int(i): adjudicate("glm-5", items[i]["text"]) for i in sub}
+print(f"[sim] double-adjudication audit ({DBL_MODEL}) on {len(sub)} items...", flush=True)
+dbl = {int(i): adjudicate(DBL_MODEL, items[i]["text"]) for i in sub}
 kappa = cohen_kappa_score([items[i]["inc"] for i in sub], [dbl[i] for i in sub])
 print(f"[sim] incumbent<->audit Cohen kappa = {kappa:.3f}", flush=True)
 
