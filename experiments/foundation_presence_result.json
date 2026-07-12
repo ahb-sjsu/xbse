@@ -1,0 +1,59 @@
+{
+  "phase": "foundation_presence_channels",
+  "encoder": "frozen pretrained BAAI/bge-m3 + linear presence head",
+  "gate": "cross-register (SocialChem->MFRC) AUROC beats TF-IDF BoW cross null by >=0.10 and >=0.60",
+  "n_passed": 0,
+  "n_total": 5,
+  "channels": [
+    {
+      "foundation": "care",
+      "n_sc": 1200,
+      "n_mf": 500,
+      "cross_register_auroc": 0.5619,
+      "bow_cross_null": 0.5922,
+      "margin_vs_bow": -0.0303,
+      "within_mfrc_cv": 0.7934,
+      "gate_passed": false
+    },
+    {
+      "foundation": "fairness",
+      "n_sc": 1200,
+      "n_mf": 500,
+      "cross_register_auroc": 0.5099,
+      "bow_cross_null": 0.5168,
+      "margin_vs_bow": -0.0069,
+      "within_mfrc_cv": 0.6347,
+      "gate_passed": false
+    },
+    {
+      "foundation": "legitimacy",
+      "n_sc": 1200,
+      "n_mf": 500,
+      "cross_register_auroc": 0.5771,
+      "bow_cross_null": 0.5582,
+      "margin_vs_bow": 0.0189,
+      "within_mfrc_cv": 0.6187,
+      "gate_passed": false
+    },
+    {
+      "foundation": "loyalty",
+      "n_sc": 1200,
+      "n_mf": 500,
+      "cross_register_auroc": 0.5294,
+      "bow_cross_null": 0.6515,
+      "margin_vs_bow": -0.1221,
+      "within_mfrc_cv": 0.7916,
+      "gate_passed": false
+    },
+    {
+      "foundation": "purity",
+      "n_sc": 1200,
+      "n_mf": 480,
+      "cross_register_auroc": 0.5391,
+      "bow_cross_null": 0.5718,
+      "margin_vs_bow": -0.0327,
+      "within_mfrc_cv": 0.8629,
+      "gate_passed": false
+    }
+  ]
+}

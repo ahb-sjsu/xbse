@@ -160,10 +160,14 @@ measured, not asserted.
   register (all ≈ 0.5), BUT a linear probe on pretrained BGE-M3 embeddings **separates the foundations at
   mean AUROC 0.748** (care 0.73 … purity 0.83). ⇒ **foundations are distinct-but-correlated dimensions;
   the A2 collapse is a property of the VALENCE readout, not the moral space** — MFT-leaning, anti-strong-TDM,
-  with a new evidence type. The identity axis is orthogonal to G and survives the register change. Fix is
-  *additive*: keep G + valence residuals, **add foundation-presence channels** (train on MFRC/MFTC labels).
-  See prereg D1/B5 section + `d1_register_result.json` + `d1_probe_result.json`. Still to do: (i) pc0↔eMFD-harm
-  correlation; (iii) effective rank of the extended vector. Prereg the remaining legs first.
+  with a new evidence type. The identity axis is orthogonal to G. **Register caveat (2026-07-12):** identity separability is
+  *within-register* — a linear presence head trained on Social-Chem does **NOT** transfer to MFRC
+  (0.51–0.58, ≤ BoW null; `foundation_presence_findings.md`), because a plain probe overfits register
+  where the valence feeders transfer only via domain-adversarial training. Fix is *additive but needs the
+  right method*: keep G + valence residuals; a transferable foundation-presence channel requires a
+  **domain-adversarial contrastive presence feeder** (attempt 2, not yet run) — or identity is
+  register-bound. See prereg D1/B5 + `d1_register_result.json` + `d1_probe_result.json` +
+  `foundation_presence_result.json`. Still to do: (i) pc0↔eMFD-harm; (iii) extended-vector effective rank.
 - **D2. Circumplex geometry test.** Schwartz's values (1992; 2012 refinement) organize on a validated
   circle — adjacency = compatibility, opposition = conflict. Test whether feeder correlation
   geometry reproduces opposition structure (candidate: autonomy vs legitimacy/authority). A
