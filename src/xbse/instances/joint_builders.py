@@ -708,12 +708,16 @@ _BASELINE_NULL = {  # untrained-encoder cross-dataset AUROC, measured before tra
     # purity's BINDING null is the TF-IDF BoW (0.656 — disgust lexicon), which dominates the untrained
     # 0.404; stored here so a re-gate keeps the tight 0.756 bar (never loosen). PASS AUROC 0.811 (+0.156).
     "purity_joint": 0.656,
+    # Phase A1 (bifactor G), prereg 2026-07-12. BINDING null is the TF-IDF BoW (0.519), which dominates
+    # the untrained 0.480. PASS at 3 seeds: AUROC 0.856 +/- 0.008 (+0.337 over max-null). general_valence.
+    "general_valence_joint": 0.519,
 }
 # Per-dimension pre-registration date override (default is the 2026-07-10 re-gate batch).
 _REGISTERED = {
     "identity_attack_joint": "2026-07-11",
     "loyalty_joint": "2026-07-12",
     "purity_joint": "2026-07-12",
+    "general_valence_joint": "2026-07-12",
 }
 
 

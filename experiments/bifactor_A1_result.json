@@ -1,0 +1,46 @@
+{
+  "dim": "general_valence_joint",
+  "auroc_mean": 0.8563,
+  "auroc_std": 0.0081,
+  "margin_mean": 0.3369,
+  "min_fuzz": 114.9253,
+  "untrained_null": 0.4801,
+  "bow_null": 0.5194,
+  "max_null_frozen": 0.5194,
+  "gate_passed": true,
+  "n_rows": 51319,
+  "by_domain": {
+    "0": 32606,
+    "1": 18713
+  },
+  "n_seeds": 3,
+  "per_seed": [
+    {
+      "seed": 0,
+      "trained_auroc": 0.8677,
+      "bow_null": 0.5194,
+      "margin_vs_max_null": 0.3483,
+      "fuzz_ratio": 114.9253,
+      "gate_passed": true,
+      "checkpoint": "xbse_ckpt/general_valence_joint_s0.pt"
+    },
+    {
+      "seed": 1,
+      "trained_auroc": 0.8495,
+      "bow_null": 0.5194,
+      "margin_vs_max_null": 0.3301,
+      "fuzz_ratio": 125.7295,
+      "gate_passed": true,
+      "checkpoint": "xbse_ckpt/general_valence_joint_s1.pt"
+    },
+    {
+      "seed": 2,
+      "trained_auroc": 0.8518,
+      "bow_null": 0.5194,
+      "margin_vs_max_null": 0.3324,
+      "fuzz_ratio": 130.1525,
+      "gate_passed": true,
+      "checkpoint": "xbse_ckpt/general_valence_joint_s2.pt"
+    }
+  ]
+}

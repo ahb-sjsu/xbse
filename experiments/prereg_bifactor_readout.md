@@ -77,5 +77,41 @@ Cosine-align the trained G direction with Schramowski et al. 2022 "moral directi
 vs our general factor); report cosine. Positions G in the computational literature; one figure. Not a
 gate — a citation.
 
-## RESULT
-_(to be appended after the run — mirrors the B1 prereg's RESULT table + honest-caveats block)_
+## RESULT (2026-07-12) — A1 PASSES: G is a real, transferable, retrain-stable axis.
+
+The general-valence channel clears its own pre-registered gate at all 3 seeds. Nulls (frozen on the
+untrained BGE-M3 before training): untrained 0.480, TF-IDF BoW 0.519 → **bar to beat = 0.619**.
+
+| seed | trained AUROC | margin vs max-null (0.519) | fuzz | gate |
+|---:|---:|---:|---:|:--:|
+| 0 | 0.868 | +0.348 | 114.9 | ✅ |
+| 1 | 0.850 | +0.330 | 125.7 | ✅ |
+| 2 | 0.852 | +0.332 | 130.2 | ✅ |
+| **mean** | **0.856 ± 0.008** | **+0.337** | min 114.9 | **✅ PASS** |
+
+Corpus: 51,319 rows (Social-Chem pooled 32,606 / ETHICS 18,713), signs balanced (25,690 − / 25,629 +).
+The BoW null (0.519) barely clears chance on cross-corpus general good/bad, so G learns transferable
+structure **well beyond keywords** (+0.34). Retrain-stable (σ = 0.008). Data:
+`experiments/bifactor_A1_result.json`; checkpoints `xbse_ckpt/general_valence_joint_s{0,1,2}.pt`.
+
+**A1 gate satisfied ⇒ G ships as channel 0, replacing the ungated `pc0` PCA proxy.** This is the
+gated encoder the readout-dishonesty deficit (#1: ~10 channels displayed, ~6 factors) required — a
+trained channel-0 that residualization (A2) can honestly subtract, rather than a linear summary of the
+same feeder scores.
+
+**Honest caveats (carry with the numbers):**
+1. **A1 is only the first leg.** Passing the standard gate proves G is a real axis; it does **not** yet
+   prove the *bifactor* claim. That is A2/P1/P3 — do the specifics survive residualization against G
+   (P1 diagonal-dominance + β-stability), and is G general rather than a smuggled foundation (P3)?
+   Those run next; H_bifactor vs H_unifactor is decided there, not here.
+2. **Shared corpus with the specifics — by design.** G pools Social-Chem, which the specific feeders
+   also draw on; that is correct for a *shared* general factor but means A2's β-fit must use a
+   calibration split disjoint from every axis's eval fold (hash-enforced) or the residual independence
+   is confounded.
+3. **A4 (Schramowski cosine) not yet run** — the cheap convergence leg is still to do.
+
+## NEXT — A2 (registered here, before running)
+Fit β_k (s_k = β_k·G + r_k) per axis on the disjoint calibration split; build the residual cross-corpus
+transfer matrix; evaluate **P1** (residual diagonal-dominance ≥ 8/11 axes; β-stability |Δβ|/|β| ≤ 0.25
+across split halves) and **P3** (G general, not a single foundation). FAIL on an axis ⇒ that channel is
+demoted into G.
