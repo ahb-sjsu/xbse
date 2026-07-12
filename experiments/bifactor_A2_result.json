@@ -1,0 +1,420 @@
+{
+  "phase": "A2_bifactor_residualization",
+  "n_axes": 11,
+  "P1": {
+    "diag_dominant_axes": 4,
+    "threshold": 8,
+    "all_beta_stable": false,
+    "pass": false,
+    "per_axis": {
+      "privacy": {
+        "diag_residual": 0.9538,
+        "max_offdiag_residual": 0.6245,
+        "diag_dominates": true,
+        "beta": 0.2506,
+        "beta_rel_instability": 0.6556,
+        "beta_stable": false
+      },
+      "care": {
+        "diag_residual": 0.6093,
+        "max_offdiag_residual": 0.685,
+        "diag_dominates": false,
+        "beta": 0.989,
+        "beta_rel_instability": 0.5027,
+        "beta_stable": false
+      },
+      "fairness": {
+        "diag_residual": 0.7074,
+        "max_offdiag_residual": 0.7231,
+        "diag_dominates": false,
+        "beta": 0.982,
+        "beta_rel_instability": 0.8743,
+        "beta_stable": false
+      },
+      "legitimacy": {
+        "diag_residual": 0.5921,
+        "max_offdiag_residual": 0.625,
+        "diag_dominates": false,
+        "beta": 0.9821,
+        "beta_rel_instability": 0.8661,
+        "beta_stable": false
+      },
+      "epistemic": {
+        "diag_residual": 0.7732,
+        "max_offdiag_residual": 0.8701,
+        "diag_dominates": false,
+        "beta": 0.827,
+        "beta_rel_instability": 0.1041,
+        "beta_stable": true
+      },
+      "physharm": {
+        "diag_residual": 0.7589,
+        "max_offdiag_residual": 0.5885,
+        "diag_dominates": true,
+        "beta": 0.347,
+        "beta_rel_instability": 1.6921,
+        "beta_stable": false
+      },
+      "autonomy": {
+        "diag_residual": 0.9051,
+        "max_offdiag_residual": 0.8792,
+        "diag_dominates": true,
+        "beta": 0.0219,
+        "beta_rel_instability": 3.0622,
+        "beta_stable": false
+      },
+      "environmental": {
+        "diag_residual": 0.9478,
+        "max_offdiag_residual": 0.986,
+        "diag_dominates": false,
+        "beta": -0.0088,
+        "beta_rel_instability": 33.6297,
+        "beta_stable": false
+      },
+      "identity_attack": {
+        "diag_residual": 0.8987,
+        "max_offdiag_residual": 0.5921,
+        "diag_dominates": true,
+        "beta": 0.3609,
+        "beta_rel_instability": 0.2523,
+        "beta_stable": false
+      },
+      "loyalty": {
+        "diag_residual": 0.6532,
+        "max_offdiag_residual": 0.7094,
+        "diag_dominates": false,
+        "beta": 0.9746,
+        "beta_rel_instability": 0.1195,
+        "beta_stable": true
+      },
+      "purity": {
+        "diag_residual": 0.7714,
+        "max_offdiag_residual": 0.8807,
+        "diag_dominates": false,
+        "beta": 0.9569,
+        "beta_rel_instability": 0.4442,
+        "beta_stable": false
+      }
+    }
+  },
+  "P3": {
+    "gpred_per_axis": {
+      "privacy": 0.6421,
+      "care": 0.9873,
+      "fairness": 0.9836,
+      "legitimacy": 0.9986,
+      "epistemic": 0.9396,
+      "physharm": 0.8197,
+      "autonomy": 0.4945,
+      "environmental": 0.5538,
+      "identity_attack": 0.6658,
+      "loyalty": 0.99,
+      "purity": 0.9997
+    },
+    "gpred_mean": 0.825,
+    "gpred_min": 0.4945,
+    "gpred_max": 0.9997,
+    "gpred_spread": 0.5052,
+    "general_pass": false
+  },
+  "transfer_summary": {
+    "raw_mean_diag": 0.9538,
+    "raw_mean_offdiag": 0.7256,
+    "residual_mean_diag": 0.7792,
+    "residual_mean_offdiag": 0.5269,
+    "offdiag_drop_after_residual": 0.1988,
+    "diag_retained_after_residual": 0.7792
+  },
+  "matrices": {
+    "raw": {
+      "privacy": {
+        "privacy": 0.9611,
+        "care": 0.3607,
+        "fairness": 0.3531,
+        "legitimacy": 0.2996,
+        "epistemic": 0.3283,
+        "physharm": 0.6499,
+        "autonomy": 0.5448,
+        "environmental": 0.6478,
+        "identity_attack": 0.6297,
+        "loyalty": 0.3307,
+        "purity": 0.28
+      },
+      "care": {
+        "privacy": 0.5199,
+        "care": 0.9948,
+        "fairness": 0.9886,
+        "legitimacy": 1.0,
+        "epistemic": 0.976,
+        "physharm": 0.8473,
+        "autonomy": 0.553,
+        "environmental": 0.6813,
+        "identity_attack": 0.6521,
+        "loyalty": 0.9977,
+        "purity": 0.9993
+      },
+      "fairness": {
+        "privacy": 0.5155,
+        "care": 0.992,
+        "fairness": 0.9704,
+        "legitimacy": 0.9997,
+        "epistemic": 0.9667,
+        "physharm": 0.6315,
+        "autonomy": 0.4364,
+        "environmental": 0.5071,
+        "identity_attack": 0.6148,
+        "loyalty": 0.9853,
+        "purity": 1.0
+      },
+      "legitimacy": {
+        "privacy": 0.5142,
+        "care": 0.9932,
+        "fairness": 0.9797,
+        "legitimacy": 1.0,
+        "epistemic": 0.9468,
+        "physharm": 0.6868,
+        "autonomy": 0.5868,
+        "environmental": 0.5735,
+        "identity_attack": 0.6458,
+        "loyalty": 0.9932,
+        "purity": 0.9912
+      },
+      "epistemic": {
+        "privacy": 0.5557,
+        "care": 0.9936,
+        "fairness": 0.9779,
+        "legitimacy": 1.0,
+        "epistemic": 0.9628,
+        "physharm": 0.6591,
+        "autonomy": 0.4258,
+        "environmental": 0.5411,
+        "identity_attack": 0.6334,
+        "loyalty": 0.99,
+        "purity": 0.9995
+      },
+      "physharm": {
+        "privacy": 0.6516,
+        "care": 0.4604,
+        "fairness": 0.5166,
+        "legitimacy": 0.5534,
+        "epistemic": 0.6757,
+        "physharm": 0.8366,
+        "autonomy": 0.5844,
+        "environmental": 0.5139,
+        "identity_attack": 0.6137,
+        "loyalty": 0.4045,
+        "purity": 0.6074
+      },
+      "autonomy": {
+        "privacy": 0.481,
+        "care": 0.8621,
+        "fairness": 0.8175,
+        "legitimacy": 0.8915,
+        "epistemic": 0.689,
+        "physharm": 0.5529,
+        "autonomy": 0.9052,
+        "environmental": 0.6537,
+        "identity_attack": 0.684,
+        "loyalty": 0.8744,
+        "purity": 0.8358
+      },
+      "environmental": {
+        "privacy": 0.575,
+        "care": 0.9698,
+        "fairness": 0.9528,
+        "legitimacy": 0.9849,
+        "epistemic": 0.7084,
+        "physharm": 0.5356,
+        "autonomy": 0.717,
+        "environmental": 0.9479,
+        "identity_attack": 0.6962,
+        "loyalty": 0.9673,
+        "purity": 0.9468
+      },
+      "identity_attack": {
+        "privacy": 0.5845,
+        "care": 0.8072,
+        "fairness": 0.7524,
+        "legitimacy": 0.8352,
+        "epistemic": 0.6696,
+        "physharm": 0.5549,
+        "autonomy": 0.5891,
+        "environmental": 0.6313,
+        "identity_attack": 0.9244,
+        "loyalty": 0.725,
+        "purity": 0.7707
+      },
+      "loyalty": {
+        "privacy": 0.4899,
+        "care": 0.9985,
+        "fairness": 0.9786,
+        "legitimacy": 0.9999,
+        "epistemic": 0.9589,
+        "physharm": 0.6832,
+        "autonomy": 0.5888,
+        "environmental": 0.639,
+        "identity_attack": 0.6406,
+        "loyalty": 0.9904,
+        "purity": 0.9925
+      },
+      "purity": {
+        "privacy": 0.5278,
+        "care": 0.9924,
+        "fairness": 0.9838,
+        "legitimacy": 1.0,
+        "epistemic": 0.9395,
+        "physharm": 0.6105,
+        "autonomy": 0.5225,
+        "environmental": 0.708,
+        "identity_attack": 0.6999,
+        "loyalty": 0.9907,
+        "purity": 0.9983
+      }
+    },
+    "residual": {
+      "privacy": {
+        "privacy": 0.9538,
+        "care": 0.206,
+        "fairness": 0.1923,
+        "legitimacy": 0.15,
+        "epistemic": 0.2048,
+        "physharm": 0.5424,
+        "autonomy": 0.5506,
+        "environmental": 0.6245,
+        "identity_attack": 0.566,
+        "loyalty": 0.1804,
+        "purity": 0.1038
+      },
+      "care": {
+        "privacy": 0.2801,
+        "care": 0.6093,
+        "fairness": 0.685,
+        "legitimacy": 0.6168,
+        "epistemic": 0.4586,
+        "physharm": 0.5877,
+        "autonomy": 0.5889,
+        "environmental": 0.6273,
+        "identity_attack": 0.4742,
+        "loyalty": 0.5697,
+        "purity": 0.6486
+      },
+      "fairness": {
+        "privacy": 0.344,
+        "care": 0.6264,
+        "fairness": 0.7074,
+        "legitimacy": 0.7231,
+        "epistemic": 0.4975,
+        "physharm": 0.2662,
+        "autonomy": 0.4581,
+        "environmental": 0.444,
+        "identity_attack": 0.4441,
+        "loyalty": 0.5433,
+        "purity": 0.6291
+      },
+      "legitimacy": {
+        "privacy": 0.2911,
+        "care": 0.6128,
+        "fairness": 0.6175,
+        "legitimacy": 0.5921,
+        "epistemic": 0.5813,
+        "physharm": 0.4172,
+        "autonomy": 0.5798,
+        "environmental": 0.5552,
+        "identity_attack": 0.4691,
+        "loyalty": 0.5354,
+        "purity": 0.625
+      },
+      "epistemic": {
+        "privacy": 0.3915,
+        "care": 0.8701,
+        "fairness": 0.8241,
+        "legitimacy": 0.8433,
+        "epistemic": 0.7732,
+        "physharm": 0.4071,
+        "autonomy": 0.4475,
+        "environmental": 0.508,
+        "identity_attack": 0.4874,
+        "loyalty": 0.8385,
+        "purity": 0.8056
+      },
+      "physharm": {
+        "privacy": 0.5623,
+        "care": 0.1566,
+        "fairness": 0.1874,
+        "legitimacy": 0.2109,
+        "epistemic": 0.3625,
+        "physharm": 0.7589,
+        "autonomy": 0.5885,
+        "environmental": 0.4948,
+        "identity_attack": 0.5396,
+        "loyalty": 0.1114,
+        "purity": 0.2539
+      },
+      "autonomy": {
+        "privacy": 0.4703,
+        "care": 0.8499,
+        "fairness": 0.8056,
+        "legitimacy": 0.8792,
+        "epistemic": 0.673,
+        "physharm": 0.5447,
+        "autonomy": 0.9051,
+        "environmental": 0.6529,
+        "identity_attack": 0.6812,
+        "loyalty": 0.863,
+        "purity": 0.8195
+      },
+      "environmental": {
+        "privacy": 0.5759,
+        "care": 0.9715,
+        "fairness": 0.9549,
+        "legitimacy": 0.986,
+        "epistemic": 0.7182,
+        "physharm": 0.5393,
+        "autonomy": 0.717,
+        "environmental": 0.9478,
+        "identity_attack": 0.6992,
+        "loyalty": 0.9689,
+        "purity": 0.95
+      },
+      "identity_attack": {
+        "privacy": 0.3509,
+        "care": 0.0745,
+        "fairness": 0.0564,
+        "legitimacy": 0.0782,
+        "epistemic": 0.0981,
+        "physharm": 0.3427,
+        "autonomy": 0.5921,
+        "environmental": 0.5098,
+        "identity_attack": 0.8987,
+        "loyalty": 0.07,
+        "purity": 0.1565
+      },
+      "loyalty": {
+        "privacy": 0.2769,
+        "care": 0.7094,
+        "fairness": 0.6372,
+        "legitimacy": 0.6351,
+        "epistemic": 0.372,
+        "physharm": 0.3324,
+        "autonomy": 0.6124,
+        "environmental": 0.5434,
+        "identity_attack": 0.4791,
+        "loyalty": 0.6532,
+        "purity": 0.5563
+      },
+      "purity": {
+        "privacy": 0.437,
+        "care": 0.8064,
+        "fairness": 0.7354,
+        "legitimacy": 0.8807,
+        "epistemic": 0.4798,
+        "physharm": 0.3229,
+        "autonomy": 0.5206,
+        "environmental": 0.6345,
+        "identity_attack": 0.5716,
+        "loyalty": 0.7529,
+        "purity": 0.7714
+      }
+    }
+  }
+}

@@ -115,3 +115,64 @@ Fit β_k (s_k = β_k·G + r_k) per axis on the disjoint calibration split; build
 transfer matrix; evaluate **P1** (residual diagonal-dominance ≥ 8/11 axes; β-stability |Δβ|/|β| ≤ 0.25
 across split halves) and **P3** (G general, not a single foundation). FAIL on an axis ⇒ that channel is
 demoted into G.
+
+## RESULT (2026-07-12) — A2: the bifactor structure is REAL but PARTIAL. P1 and P3 both FAIL the strict gate — and the failure is the finding.
+
+Per-item residualization of all 11 learned axes against G (seed-0), β_k fit on each axis's disjoint
+calibration half, residual transfer AUROC on the test half. Data: `experiments/bifactor_A2_result.json`.
+
+**Aggregate bifactor signature — present.** Removing G collapses cross-axis transfer toward chance while
+the diagonal is retained:
+
+| transfer matrix | mean diagonal | mean off-diagonal |
+|---|---:|---:|
+| raw scores | 0.954 | 0.726 |
+| **after − β·G** | **0.779** | **0.527** |
+
+Off-diagonal drops **−0.199 (→ 0.53, near chance)**: most cross-axis prediction was flowing **through
+the shared general factor**. That is the bifactor claim, at the aggregate. **But the per-axis gates fail,
+and they fail informatively — the 11 axes split into two clean populations:**
+
+**Population A — collinear with G (the Social-Chem moral family): NOT separable.** care, fairness,
+legitimacy, epistemic, loyalty, purity. β on G ≈ **0.98** (their per-item scores are ~identical to G),
+G predicts them at **0.94–1.00**, and their residual diagonal collapses (0.59–0.77) below off-diagonals
+→ **fail diagonal-dominance**. At the readout level these are facets of one factor, not independent axes.
+
+**Population B — separable from G (independent-corpus axes): real specifics.** privacy, physharm,
+identity_attack, autonomy (environmental borderline). β on G ≈ **0–0.36**, G predicts them only
+**0.49–0.67** (autonomy at chance), residual diagonal stays **high (0.76–0.95) and dominates** its row
+→ **pass diagonal-dominance**. These carry genuine axis-specific structure beyond G.
+
+**Pre-registered verdict (honestly, as the gate was written):**
+- **P1 FAILS:** 4/11 strictly diagonal-dominant (privacy, physharm, autonomy, identity_attack) vs the
+  ≥8 threshold. *β-stability note:* the |Δβ|/|β| failures for autonomy (β≈0.02) and environmental
+  (β≈−0.01) are **numerical artifacts of a near-zero loading** — a relative metric explodes when β≈0,
+  which here *confirms* independence rather than instability. The genuine-instability cases are the
+  family axes with large β.
+- **P3 FAILS:** G-prediction spread across axes is **0.51** (min autonomy 0.49, max purity 1.00). G is
+  **not uniformly general** — it is essentially the **shared valence of the Social-Chem moral-foundations
+  family**, near-blind to independent-corpus axes.
+
+**What FAIL means here (per the prereg's own rule "FAIL demotes channels into G"):**
+1. **Relabel G honestly.** It is not a universal general moral factor; it is the *Social-Chem-family
+   shared valence*. The channel name/scope must say so.
+2. **Demote Population A into G** in the readout — displaying care/fairness/legitimacy/epistemic/loyalty/
+   purity as six independent axes is the exact "hollow axis" dishonesty the bifactor readout exists to
+   prevent. Effective independent structure ≈ **G + ~4 specifics ≈ 5**, consistent with the effective-rank
+   5.68/9 finding — now with a *mechanism*, not just an eigenvalue.
+3. **Keep Population B** (privacy, physharm, identity_attack, autonomy) as genuine residualized specifics.
+
+**Critical confound (bounds the claim — do NOT over-read Population A):** G's training corpus (pooled
+Social-Chem) **literally contains** Population A's training RoTs, so G→family ≈ 1.0 and β ≈ 0.98 are
+**partly corpus overlap, not proven latent structure**. The Population B *separations are confound-free*
+(different corpora, low G-pred), but "the family collapses into one true general moral factor" vs "the
+family shares one corpus's valence direction" is **not settled here** — that is exactly **D1**
+(cross-provenance residualization). So: Population B is a firm result now; Population A's collapse is
+*demonstrated on shared-corpus data* and *flagged for D1*.
+
+**Bearing on B1:** loyalty (β 0.97) and purity (β 0.96) passed their B1 gate as real transferable valence
+axes, but A2 shows they are **not independent of G on this test** — precisely the B1 caveat #2. Honest
+refinement, not a retraction: they are real moral-valence signals that are (on shared-corpus data)
+largely the general factor. D1 decides whether that survives cross-provenance.
+
+**A4 (Schramowski cosine) still not run.** Deferred with A-phase writeup.

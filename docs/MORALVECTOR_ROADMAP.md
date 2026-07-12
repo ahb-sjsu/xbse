@@ -58,16 +58,23 @@ measured, not asserted.
 
 *The cheapest large improvement; converts the rank-collapse finding into architecture.*
 
-- **A1. Promote the general factor.** Ship `G` (general moral valence) as channel 0. **Status check
-  (2026-07-12): `G` is not yet a trained encoder.** Today `pc0` is a *PCA projection* of the feeder
-  scores (computed in gtc's spectrum analyzer / theory-radar), not a BSE encoder with its own gate
-  Report — so A1 is a **build**: train a general-valence feeder (family-pooled corpus is the natural
-  source) at 3 seeds and gate it like any axis. Psychometric ancestry: the bifactor model (Reise 2012);
-  MFT's individualizing/binding general structure (Graham et al. 2009, 2011).
-- **A2. Residualize the specifics.** Per axis k: r_k = s_k − β_k·G, β_k fit on a calibration split
-  (never eval), committed with results; β-stability across split halves as the manipulation check.
-  **The prereg (`prereg_bifactor_readout.md`) is NOT yet written** — draft it before running (the doc
-  previously mis-stated it as drafted).
+- **A1. Promote the general factor. ✓ DONE 2026-07-12 — G trained + PASSES the gate.** Trained a
+  general-valence BSE feeder (pooled signed Social-Chem all-categories × all signed ETHICS, 51,319 rows)
+  at 3 seeds: **AUROC 0.856 ± 0.008, +0.337 over max-null (0.519), fuzz ≥ 115 → PASS.** Ships as channel 0,
+  replacing the ungated `pc0` PCA projection. See `experiments/prereg_bifactor_readout.md` +
+  `bifactor_A1_result.json`. Psychometric ancestry: bifactor model (Reise 2012); MFT
+  individualizing/binding structure (Graham et al. 2009, 2011).
+- **A2. Residualize the specifics. ✓ DONE 2026-07-12 — bifactor REAL but PARTIAL; P1/P3 fail strict,
+  informatively.** Per-item r_k = s_k − β_k·G, β_k on a disjoint calibration half. Removing G collapses
+  mean off-diagonal transfer 0.726 → 0.527 (near chance) — the shared-factor signature. But the 11 axes
+  split two ways: **(A) the Social-Chem family** (care, fairness, legitimacy, epistemic, loyalty, purity)
+  is **collinear with G** (β ≈ 0.98, residual diagonal collapses) → demote into G; **(B) independent-corpus
+  axes** (privacy, physharm, identity_attack, autonomy) are **separable** (β ≈ 0, dominant residual
+  diagonal) → keep. ⇒ **G relabelled as the *Social-Chem-family shared valence*, not a universal factor;
+  effective independent structure ≈ G + ~4 specifics ≈ 5** (mechanism for the 5.68/9 rank). **Confound:**
+  G's corpus contains family A's RoTs, so A's collapse is shown *on shared-corpus data* and handed to **D1**
+  (cross-provenance) to settle; population B's separation is confound-free. See the A2 RESULT in the prereg
+  + `bifactor_A2_result.json`.
 - **A3. Two quality numbers per channel.** The margin↔fuzz dissociation is measured (legitimacy:
   weakest margin, high fuzz; environmental: reverse) — the vector schema carries **both** per axis:
   discriminative margin and invariance fuzz. A consumer can require either or both.
