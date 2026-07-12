@@ -32,7 +32,10 @@ SEEDS = [0, 1, 2]
 DIMS = {"care_v2": "care_v2_joint", "fair_v2": "fairness_v2_joint"}
 
 # build eval sets once (deterministic)
-evs = {lab: BUILDERS[b](holdout_frac=0.12).heldout_eval()["structural_pairs"] for lab, b in DIMS.items()}
+evs = {
+    lab: BUILDERS[b](holdout_frac=0.12).heldout_eval()["structural_pairs"]
+    for lab, b in DIMS.items()
+}
 
 
 def _auroc(enc, sp):
@@ -58,8 +61,16 @@ def _get_enc(lab, seed):
         np.random.seed(seed)
         torch.manual_seed(seed)
         src = BUILDERS[DIMS[lab]](holdout_frac=0.12)
-        train_adversarial(enc, src, epochs=6, batch_size=24, lr=2e-5, max_steps=1200,
-                          max_lambda=0.0, checkpoint_path=ck)
+        train_adversarial(
+            enc,
+            src,
+            epochs=6,
+            batch_size=24,
+            lr=2e-5,
+            max_steps=1200,
+            max_lambda=0.0,
+            checkpoint_path=ck,
+        )
     enc.eval()
     return enc
 
@@ -77,12 +88,20 @@ for seed in SEEDS:
     within = min(cc, ff)
     gap = within - cross
     gaps.append(gap)
-    print(f"  care->care {cc:.3f} fair->fair {ff:.3f} | care->fair {cf:.3f} fair->care {fc:.3f} | "
-          f"cross {cross:.3f} min-within {within:.3f} GAP {gap:+.3f}", flush=True)
+    print(
+        f"  care->care {cc:.3f} fair->fair {ff:.3f} | care->fair {cf:.3f} fair->care {fc:.3f} | "
+        f"cross {cross:.3f} min-within {within:.3f} GAP {gap:+.3f}",
+        flush=True,
+    )
     del care, fair
     torch.cuda.empty_cache()
 
 g = np.array(gaps)
-print(f"\n=== care_v2<->fair_v2 gap over {len(SEEDS)} seeds: {g.mean():+.3f} ± {g.std(ddof=1):.3f} "
-      f"(gaps {[round(x, 3) for x in gaps]}) ===", flush=True)
-print("decoupling is safe if mean - sd stays > 0 (and comfortably > the +0.10 threshold).", flush=True)
+print(
+    f"\n=== care_v2<->fair_v2 gap over {len(SEEDS)} seeds: {g.mean():+.3f} ± {g.std(ddof=1):.3f} "
+    f"(gaps {[round(x, 3) for x in gaps]}) ===",
+    flush=True,
+)
+print(
+    "decoupling is safe if mean - sd stays > 0 (and comfortably > the +0.10 threshold).", flush=True
+)

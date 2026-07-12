@@ -328,8 +328,12 @@ def build_general_valence_joint(holdout_frac: float = 0.12) -> JointPairSource:
 # Replace the shared ETHICS second corpus with a DIFFERENT-provenance signed corpus, keeping
 # Social-Chem as the first corpus, so the change is isolated. Tests whether corpus independence
 # separates the collapsed family (see experiments/prereg_independent_corpora.md).
-MS_CARE = _data("moral_stories", "care_signed.jsonl")  # Moral-Stories care-norm actions (+moral/-immoral)
-MHS_FAIR = _data("mhs", "mhs_fairness.jsonl")  # Measuring Hate Speech (score>0.5 -> '-', <-1 -> '+')
+MS_CARE = _data(
+    "moral_stories", "care_signed.jsonl"
+)  # Moral-Stories care-norm actions (+moral/-immoral)
+MHS_FAIR = _data(
+    "mhs", "mhs_fairness.jsonl"
+)  # Measuring Hate Speech (score>0.5 -> '-', <-1 -> '+')
 
 
 def _signed_jsonl_simple(path, cap=None):
@@ -668,9 +672,9 @@ _RAW_BUILDERS = {
     "fairness_joint": lambda **k: build_foundation_joint("fairness", **k),
     "legitimacy_joint": lambda **k: build_foundation_joint("legitimacy", **k),
     "epistemic_joint": lambda **k: build_foundation_joint("epistemic", **k),
-    "loyalty_joint": lambda **k: build_foundation_joint("loyalty", **k),      # B1 (MoralVector roadmap)
-    "purity_joint": lambda **k: build_foundation_joint("purity", **k),        # B1 (MoralVector roadmap)
-    "general_valence_joint": build_general_valence_joint,                     # Phase A1 (bifactor G)
+    "loyalty_joint": lambda **k: build_foundation_joint("loyalty", **k),  # B1 (MoralVector roadmap)
+    "purity_joint": lambda **k: build_foundation_joint("purity", **k),  # B1 (MoralVector roadmap)
+    "general_valence_joint": build_general_valence_joint,  # Phase A1 (bifactor G)
     "physharm_joint": build_physharm_joint,
     "autonomy_joint": build_autonomy_joint,
     "care_v2_joint": build_care_v2,

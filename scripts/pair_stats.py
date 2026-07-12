@@ -35,8 +35,15 @@ from xbse.instances.joint_builders import BUILDERS  # noqa: E402
 CKDIR = os.environ.get("XBSE_CKPT_DIR", "/home/claude/xbse_ckpt")
 BOOT = int(os.environ.get("XBSE_BOOTSTRAP", "1000"))
 DIMS = [
-    "privacy_joint", "environmental_joint", "rights_joint", "care_joint", "fairness_joint",
-    "legitimacy_joint", "epistemic_joint", "physharm_joint", "autonomy_joint",
+    "privacy_joint",
+    "environmental_joint",
+    "rights_joint",
+    "care_joint",
+    "fairness_joint",
+    "legitimacy_joint",
+    "epistemic_joint",
+    "physharm_joint",
+    "autonomy_joint",
 ]
 
 
@@ -59,7 +66,11 @@ def _boot_ci(sims, y, anchors, n=BOOT):
         yy, ss = y[idx], sims[idx]
         if 0 < yy.sum() < len(yy):
             out.append(roc_auc_score(yy, ss))
-    return (float(np.percentile(out, 2.5)), float(np.percentile(out, 97.5))) if out else (float("nan"),) * 2
+    return (
+        (float(np.percentile(out, 2.5)), float(np.percentile(out, 97.5)))
+        if out
+        else (float("nan"),) * 2
+    )
 
 
 rows = []
@@ -91,6 +102,10 @@ for dim in DIMS:
     torch.cuda.empty_cache()
 
 print("\n=== SUMMARY (sorted by frozen-difficulty; highest = easiest pairs) ===", flush=True)
-print(f"{'dimension':<22}{'frozen':>8}{'trained':>9}{'CI95':>18}{'pairs':>7}{'anchors':>9}{'pos':>6}")
+print(
+    f"{'dimension':<22}{'frozen':>8}{'trained':>9}{'CI95':>18}{'pairs':>7}{'anchors':>9}{'pos':>6}"
+)
 for dim, fr, tr, lo, hi, npr, na, npos in sorted(rows, key=lambda r: -r[1]):
-    print(f"{dim:<22}{fr:>8.3f}{tr:>9.3f}   [{lo:.3f},{hi:.3f}]{npr:>7}{na:>9}{npos:>6}", flush=True)
+    print(
+        f"{dim:<22}{fr:>8.3f}{tr:>9.3f}   [{lo:.3f},{hi:.3f}]{npr:>7}{na:>9}{npos:>6}", flush=True
+    )

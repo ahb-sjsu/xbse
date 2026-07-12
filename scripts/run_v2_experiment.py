@@ -55,8 +55,14 @@ for dim in DIMS:
 
     ckpt = os.path.join(CKDIR, f"{dim}.pt")
     train_adversarial(
-        enc, src, epochs=6, batch_size=24, lr=2e-5, max_steps=1200,
-        max_lambda=0.0, checkpoint_path=ckpt,
+        enc,
+        src,
+        epochs=6,
+        batch_size=24,
+        lr=2e-5,
+        max_steps=1200,
+        max_lambda=0.0,
+        checkpoint_path=ckpt,
     )
     fin = gate(enc, ev)  # trained
     null, bow, tr = base["structure_auroc"], fin["bow_auroc"], fin["structure_auroc"]
@@ -68,8 +74,11 @@ for dim in DIMS:
         flush=True,
     )
     results[dim] = {
-        "trained_auroc": round(tr, 4), "untrained_null": round(null, 4),
-        "bow_null": round(bow, 4), "margin": round(margin, 4), "gate_passed": bool(passed),
+        "trained_auroc": round(tr, 4),
+        "untrained_null": round(null, 4),
+        "bow_null": round(bow, 4),
+        "margin": round(margin, 4),
+        "gate_passed": bool(passed),
         "checkpoint": ckpt,
     }
 

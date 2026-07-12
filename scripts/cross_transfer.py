@@ -98,5 +98,7 @@ for r in LABELS:
         cross = (results[(r, cc)] + results[(cc, r)]) / 2
         within = min(results[(r, r)], results[(cc, cc)])
         verdict = "COLLAPSED (shared axis)" if (within - cross) < 0.10 else "distinct"
-        print(f"  {r:<8}<->{cc:<8} cross={cross:.4f}  min-within={within:.4f}  gap={within - cross:+.4f}  {verdict}")
+        print(
+            f"  {r:<8}<->{cc:<8} cross={cross:.4f}  min-within={within:.4f}  gap={within - cross:+.4f}  {verdict}"
+        )
 print("interpretation: gap<0.10 => collapsed/shared axis; gap>=0.10 => distinct dims", flush=True)

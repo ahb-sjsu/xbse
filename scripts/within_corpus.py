@@ -44,8 +44,15 @@ MAXLEN = int(os.environ.get("XBSE_MAX_LEN", "128"))
 CAP = int(os.environ.get("XBSE_MAX_PER_CORPUS", "8000"))
 
 DIMS = [
-    "privacy_joint", "environmental_joint", "rights_joint", "care_joint", "fairness_joint",
-    "legitimacy_joint", "epistemic_joint", "physharm_joint", "autonomy_joint",
+    "privacy_joint",
+    "environmental_joint",
+    "rights_joint",
+    "care_joint",
+    "fairness_joint",
+    "legitimacy_joint",
+    "epistemic_joint",
+    "physharm_joint",
+    "autonomy_joint",
 ]
 
 enc = BSEEncoder(base_model=BASE, pooling=POOLING, max_len=MAXLEN, device="cuda")
@@ -59,10 +66,12 @@ def _cap(pairs):
     idx = np.arange(len(pairs))
     pos, neg = idx[y == 1], idx[y == 0]
     k_pos = int(round(CAP * len(pos) / len(idx)))
-    keep = np.concatenate([
-        rng.choice(pos, min(k_pos, len(pos)), replace=False),
-        rng.choice(neg, min(CAP - k_pos, len(neg)), replace=False),
-    ])
+    keep = np.concatenate(
+        [
+            rng.choice(pos, min(k_pos, len(pos)), replace=False),
+            rng.choice(neg, min(CAP - k_pos, len(neg)), replace=False),
+        ]
+    )
     return [pairs[i] for i in keep]
 
 
@@ -112,7 +121,10 @@ for dim in DIMS:
         Xt = TfidfVectorizer(max_features=20000, ngram_range=(1, 2), min_df=2).fit_transform(texts)
         boww[di] = _kfold_auroc(Xt.toarray() if Xt.shape[1] < 4000 else Xt, y)
         nm = names[di] if di < len(names) else str(di)
-        print(f"  {nm:<16} n={len(y):5d} emb-within={embw[di]:.4f} bow-within={boww[di]:.4f}", flush=True)
+        print(
+            f"  {nm:<16} n={len(y):5d} emb-within={embw[di]:.4f} bow-within={boww[di]:.4f}",
+            flush=True,
+        )
 
     # frozen cross-probe: train on each corpus, test on the others; mean over ordered pairs
     doms = sorted(bydom)
@@ -126,14 +138,25 @@ for dim in DIMS:
     mean_within = float(np.nanmean([embw[d] for d in doms]))
     mean_bow = float(np.nanmean([boww[d] for d in doms]))
     drop = mean_within - emb_cross
-    print(f"  -> mean-emb-within={mean_within:.4f} emb-CROSS-probe={emb_cross:.4f} drop={drop:.4f} "
-          f"(bow-within={mean_bow:.4f})", flush=True)
+    print(
+        f"  -> mean-emb-within={mean_within:.4f} emb-CROSS-probe={emb_cross:.4f} drop={drop:.4f} "
+        f"(bow-within={mean_bow:.4f})",
+        flush=True,
+    )
     summary.append((dim, mean_within, mean_bow, emb_cross, drop))
 
-print("\n=== SUMMARY (same-estimator frozen linear probe) ranked by within->cross drop ===", flush=True)
-print(f"{'dimension':<22}{'emb-within':>11}{'bow-within':>11}{'emb-cross':>11}{'drop':>8}{'  at-chance?'}")
+print(
+    "\n=== SUMMARY (same-estimator frozen linear probe) ranked by within->cross drop ===",
+    flush=True,
+)
+print(
+    f"{'dimension':<22}{'emb-within':>11}{'bow-within':>11}{'emb-cross':>11}{'drop':>8}{'  at-chance?'}"
+)
 for dim, mw, mb, ec, dp in sorted(summary, key=lambda r: -r[4]):
     chance = "  <-- CHANCE" if (ec == ec and ec < 0.55) else ""
     print(f"{dim:<22}{mw:>11.4f}{mb:>11.4f}{ec:>11.4f}{dp:>8.3f}{chance}", flush=True)
-print("\nReading: emb-within~bow-within => within signal is largely lexical; emb-cross~0.5 => no "
-      "transfer at the representation level (framework-relativity if within is high).", flush=True)
+print(
+    "\nReading: emb-within~bow-within => within signal is largely lexical; emb-cross~0.5 => no "
+    "transfer at the representation level (framework-relativity if within is high).",
+    flush=True,
+)

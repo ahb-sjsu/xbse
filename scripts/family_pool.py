@@ -53,7 +53,10 @@ def build_family_pool(holdout_frac: float = 0.12) -> JointPairSource:
 
 pool_src = build_family_pool()
 pool_train_texts = {t for t, _d in pool_src.train_rows()}
-print(f"[family_pool] pooled rows={len(pool_src._rows())} train-texts={len(pool_train_texts)}", flush=True)
+print(
+    f"[family_pool] pooled rows={len(pool_src._rows())} train-texts={len(pool_train_texts)}",
+    flush=True,
+)
 
 pool_ck = os.path.join(CKDIR, "family_pool_repro.pt")
 pool_enc = BSEEncoder(base_model="BAAI/bge-m3", pooling="mean", max_len=128, device="cuda")
@@ -62,8 +65,14 @@ if os.environ.get("XBSE_REUSE_POOL") and os.path.exists(pool_ck):
     print("[family_pool] loaded existing pool checkpoint", flush=True)
 else:
     train_adversarial(
-        pool_enc, pool_src, epochs=6, batch_size=24, lr=2e-5, max_steps=1500,
-        max_lambda=0.0, checkpoint_path=pool_ck,
+        pool_enc,
+        pool_src,
+        epochs=6,
+        batch_size=24,
+        lr=2e-5,
+        max_steps=1500,
+        max_lambda=0.0,
+        checkpoint_path=pool_ck,
     )
 pool_enc.eval()
 
@@ -82,7 +91,13 @@ for f in FAMILY:
     ded.eval()
     d_au = structure_vs_surface_auroc(ded, spc)
     p_au = structure_vs_surface_auroc(pool_enc, spc)
-    print(f"{f:<14}{d_au:>10.3f}{p_au:>13.3f}{p_au - d_au:>+8.3f}{f'  {len(spc)}/{len(sp)}':>14}", flush=True)
+    print(
+        f"{f:<14}{d_au:>10.3f}{p_au:>13.3f}{p_au - d_au:>+8.3f}{f'  {len(spc)}/{len(sp)}':>14}",
+        flush=True,
+    )
     del ded
     torch.cuda.empty_cache()
-print("\nReading: family-pool >= dedicated (gap >= ~0) => the four are one shared valence (§3.3).", flush=True)
+print(
+    "\nReading: family-pool >= dedicated (gap >= ~0) => the four are one shared valence (§3.3).",
+    flush=True,
+)
