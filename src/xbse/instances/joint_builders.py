@@ -145,6 +145,50 @@ FOUNDATIONS = {
             "mislead",
         ),
     ),
+    # B1 (MoralVector roadmap): the two MFT "binding" foundations the DEME taxonomy misses. Social-Chem
+    # carries them as first-class MFT categories (loyalty-betrayal 41k, sanctity-degradation 15k); ETHICS
+    # is the independent second corpus via keywords. Convention unchanged: '+' upheld, '-' violated.
+    "loyalty": (
+        "loyalty-betrayal",
+        (
+            "loyal",
+            "loyalty",
+            "betray",
+            "betrayal",
+            "traitor",
+            "treason",
+            "faithful",
+            "unfaithful",
+            "cheat on",
+            "backstab",
+            "desert",
+            "abandon",
+            "allegiance",
+            "snitch",
+            "rat out",
+        ),
+    ),
+    "purity": (
+        "sanctity-degradation",
+        (
+            "disgusting",
+            "gross",
+            "obscene",
+            "sacred",
+            "holy",
+            "sinful",
+            "pure",
+            "impure",
+            "defile",
+            "degrade",
+            "vulgar",
+            "indecent",
+            "filthy",
+            "depraved",
+            "perver",
+            "sanctity",
+        ),
+    ),
 }
 _EPI_KW = FOUNDATIONS["epistemic"][1]
 
@@ -266,6 +310,35 @@ def build_fairness_v2(holdout_frac: float = 0.1) -> JointPairSource:
         holdout_frac=holdout_frac,
         invariant_structure="fairness valence, shared across RoTs and hate-speech comments",
         label_source="Social-Chem fairness-cheating sign + Measuring-Hate-Speech score (independent)",
+    )
+
+
+# ------------------------------------------ identity_attack (GTC discovered dimension, prereg 2026-07-11)
+# A moral dimension the DEME-9 taxonomy MISSED: surfaced by the Moral Spectrum Analyzer's discovery
+# band (+0.24 [0.20, 0.28] over the covered-category baseline) and validated here through the SAME
+# pre-registered gate as the 8 passing feeders. Two genuinely independent corpora, materialised by
+# scripts/build_identity_attack.py: Jigsaw civil_comments identity_attack labels (>=0.5 attack /
+# clean respected) and Berkeley Measuring-Hate-Speech hate_speech_score (>0.5 attack / <-1 supportive).
+CC_IDENTITY = _data("identity_attack", "civil_comments_identity.jsonl")
+MHS_IDENTITY = _data("identity_attack", "mhs_identity.jsonl")
+
+
+def build_identity_attack_joint(holdout_frac: float = 0.12) -> JointPairSource:
+    return JointPairSource(
+        name="identity_attack_joint",
+        domains=[
+            ("civil_comments", _signed_jsonl_simple(CC_IDENTITY)),
+            ("mhs", _signed_jsonl_simple(MHS_IDENTITY)),
+        ],
+        holdout_frac=holdout_frac,
+        invariant_structure=(
+            "identity-attack valence (a person or group demeaned/attacked for their identity vs "
+            "treated with dignity), shared across Jigsaw civil-comments and Berkeley hate-speech"
+        ),
+        label_source=(
+            "Jigsaw civil_comments identity_attack label + Measuring-Hate-Speech hate_speech_score "
+            "(independent corpora)"
+        ),
     )
 
 
@@ -527,11 +600,14 @@ _RAW_BUILDERS = {
     "fairness_joint": lambda **k: build_foundation_joint("fairness", **k),
     "legitimacy_joint": lambda **k: build_foundation_joint("legitimacy", **k),
     "epistemic_joint": lambda **k: build_foundation_joint("epistemic", **k),
+    "loyalty_joint": lambda **k: build_foundation_joint("loyalty", **k),      # B1 (MoralVector roadmap)
+    "purity_joint": lambda **k: build_foundation_joint("purity", **k),        # B1 (MoralVector roadmap)
     "physharm_joint": build_physharm_joint,
     "autonomy_joint": build_autonomy_joint,
     "care_v2_joint": build_care_v2,
     "fairness_v2_joint": build_fairness_v2,
     "rights_no_art8_joint": build_rights_no_art8,
+    "identity_attack_joint": build_identity_attack_joint,
 }
 
 # --------------------------------------------------------------- pre-registered validation bars
@@ -554,6 +630,17 @@ _BASELINE_NULL = {  # untrained-encoder cross-dataset AUROC, measured before tra
     "autonomy_joint": 0.515,
     "environmental_joint": 0.426,
     "rights_joint": 0.517,
+    "identity_attack_joint": 0.552,  # prereg 2026-07-11 (discovered dimension); see _REGISTERED
+    "loyalty_joint": 0.411,  # B1 (MoralVector roadmap), prereg 2026-07-12; untrained null; PASS AUROC 0.911
+    # purity's BINDING null is the TF-IDF BoW (0.656 — disgust lexicon), which dominates the untrained
+    # 0.404; stored here so a re-gate keeps the tight 0.756 bar (never loosen). PASS AUROC 0.811 (+0.156).
+    "purity_joint": 0.656,
+}
+# Per-dimension pre-registration date override (default is the 2026-07-10 re-gate batch).
+_REGISTERED = {
+    "identity_attack_joint": "2026-07-11",
+    "loyalty_joint": "2026-07-12",
+    "purity_joint": "2026-07-12",
 }
 
 
@@ -573,7 +660,7 @@ def _prereg_bar(name: str):
             f"({b}) and the TF-IDF bag-of-words null by >= {_MARGIN} on the same held-out pairs; "
             f"nulls are properties of (untrained model + corpus), independent of the trained feeder."
         ),
-        registered="2026-07-10",
+        registered=_REGISTERED.get(name, "2026-07-10"),
     )
 
 

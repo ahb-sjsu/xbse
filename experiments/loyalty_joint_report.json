@@ -1,0 +1,24 @@
+{
+  "bar_derivation": "VALIDATED iff cross-dataset held-out AUROC beats BOTH the untrained-encoder null (0.411) and the TF-IDF bag-of-words null by >=0.10 on the same held-out pairs.",
+  "bar_registered": "2026-07-12",
+  "bar_source": "baseline-relative(margin 0.10) over untrained null 0.411 + BoW null",
+  "checkpoint_hash": "23d54d10fac7ea90",
+  "extra": {},
+  "instance": "loyalty_joint",
+  "metrics": {
+    "domain_acc": 1.0,
+    "domain_chance": 0.5,
+    "fuzz_ratio": 130.19525558904797,
+    "severity_auroc": 0.8586,
+    "structure_auroc": 0.910586111111111,
+    "surface_invariance": 0.9981017112731934
+  },
+  "passed": true,
+  "thresholds": {
+    "auroc>": 0.511,
+    "baseline_null": 0.411,
+    "fuzz>": 1.0,
+    "margin>=": 0.1,
+    "policy": "baseline_relative"
+  }
+}

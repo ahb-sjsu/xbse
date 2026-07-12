@@ -1,0 +1,40 @@
+[
+  {
+    "dim": "loyalty_joint",
+    "trained_auroc": 0.9106,
+    "untrained_null": 0.4108,
+    "bow_null": 0.505,
+    "margin_vs_max_null": 0.4056,
+    "fuzz_ratio": 130.1953,
+    "gate_passed": true,
+    "n_rows": 23739,
+    "by_domain": {
+      "0": 23137,
+      "1": 602
+    },
+    "checkpoint": "xbse_ckpt/loyalty_joint.pt",
+    "mfrc_presence_crosscheck": {
+      "auroc_presence": 0.6081,
+      "n_per_class": 800
+    }
+  },
+  {
+    "dim": "purity_joint",
+    "trained_auroc": 0.8112,
+    "untrained_null": 0.4037,
+    "bow_null": 0.6556,
+    "margin_vs_max_null": 0.1557,
+    "fuzz_ratio": 39.0168,
+    "gate_passed": true,
+    "n_rows": 9637,
+    "by_domain": {
+      "0": 9300,
+      "1": 337
+    },
+    "checkpoint": "xbse_ckpt/purity_joint.pt",
+    "mfrc_presence_crosscheck": {
+      "auroc_presence": 0.635,
+      "n_per_class": 782
+    }
+  }
+]
