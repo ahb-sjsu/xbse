@@ -324,6 +324,88 @@ def build_general_valence_joint(holdout_frac: float = 0.12) -> JointPairSource:
     )
 
 
+# ------------------------------ foundation-PRESENCE (identity) feeders — attempt 2 (D1/B5 follow-up)
+# The "which foundation is engaged" axis the valence feeders discard. Unlike attempt-1 (a linear probe
+# that overfit register and failed cross-transfer), these go through train_adversarial's DOMAIN-ADVERSARIAL
+# training, which strips corpus-identifying features to force register-invariance. Presence label:
+# '+' = foundation-k engaged, '-' = a DIFFERENT foundation engaged (identity contrast, valence ignored).
+# Two independent foundation-labeled corpora: Social-Chem rot-moral-foundations x MFRC Reddit annotations.
+# See experiments/foundation_presence_findings.md. MFRC materialized by scripts/materialize_mfrc.py.
+MFRC_FOUND = _data("mfrc", "mfrc_foundations.jsonl")
+_FCAT = {  # foundation -> Social-Chem rot-moral-foundations category substring
+    "care": "care-harm",
+    "fairness": "fairness-cheating",
+    "legitimacy": "authority-subversion",
+    "loyalty": "loyalty-betrayal",
+    "purity": "sanctity-degradation",
+}
+
+
+def _social_chem_by_foundation(cap_per=1600):
+    """{foundation: [rot, ...]} grouped by rot-moral-foundations category (valence ignored)."""
+    by_f = {f: [] for f in _FCAT}
+    with _open(SOCIAL_CHEM, newline="") as fh:
+        for row in csv.DictReader(fh, delimiter="\t"):
+            try:
+                if int(row.get("rot-agree") or 0) < 3:
+                    continue
+            except (TypeError, ValueError):
+                continue
+            rot = (row.get("rot") or "").strip()
+            if len(rot) < 12:
+                continue
+            col = (row.get("rot-moral-foundations") or "").lower()
+            for f, cat in _FCAT.items():
+                if cat in col and len(by_f[f]) < cap_per:
+                    by_f[f].append(rot)
+    return by_f
+
+
+def _mfrc_by_foundation(cap_per=600):
+    """{foundation: [comment, ...]} from the materialized MFRC jsonl (single-foundation comments)."""
+    by_f = {f: [] for f in _FCAT}
+    with _open(MFRC_FOUND) as fh:
+        for line in fh:
+            try:
+                d = json.loads(line)
+            except (ValueError, TypeError):
+                continue
+            f = d.get("foundation")
+            t = (d.get("text") or "").strip()
+            if f in by_f and len(t) >= 12 and len(by_f[f]) < cap_per:
+                by_f[f].append(t)
+    return by_f
+
+
+def _presence_rows(by_f, k):
+    """'+' = foundation-k text; '-' = other-foundation text (balanced across the other foundations)."""
+    pos = [(t, "+") for t in by_f[k]]
+    others = [f for f in _FCAT if f != k]
+    per = max(1, len(pos) // len(others))
+    neg = []
+    for f in others:
+        neg.extend((t, "-") for t in by_f[f][:per])
+    return pos + neg
+
+
+def build_foundation_presence_joint(name: str, holdout_frac: float = 0.12) -> JointPairSource:
+    """Foundation-IDENTITY presence feeder (attempt 2, domain-adversarial). name e.g. 'loyalty'.
+    Cross-corpus positive = (Social-Chem k-RoT, MFRC k-comment): same foundation, different register.
+    """
+    sc = _social_chem_by_foundation()
+    mf = _mfrc_by_foundation()
+    return JointPairSource(
+        name=f"{name}_presence_joint",
+        domains=[
+            ("socialchem", _presence_rows(sc, name)),
+            ("mfrc", _presence_rows(mf, name)),
+        ],
+        holdout_frac=holdout_frac,
+        invariant_structure=f"{name}-foundation ENGAGEMENT (present vs a different foundation), shared across RoTs and Reddit comments",
+        label_source="Social-Chem rot-moral-foundations category + MFRC foundation annotation (identity, valence-agnostic)",
+    )
+
+
 # ------------------------------------------ v2 independent-corpus feeders (prereg experiment)
 # Replace the shared ETHICS second corpus with a DIFFERENT-provenance signed corpus, keeping
 # Social-Chem as the first corpus, so the change is isolated. Tests whether corpus independence
@@ -675,6 +757,12 @@ _RAW_BUILDERS = {
     "loyalty_joint": lambda **k: build_foundation_joint("loyalty", **k),  # B1 (MoralVector roadmap)
     "purity_joint": lambda **k: build_foundation_joint("purity", **k),  # B1 (MoralVector roadmap)
     "general_valence_joint": build_general_valence_joint,  # Phase A1 (bifactor G)
+    # foundation-PRESENCE (identity) feeders, attempt 2 (domain-adversarial) — D1/B5 follow-up
+    "care_presence_joint": lambda **k: build_foundation_presence_joint("care", **k),
+    "fairness_presence_joint": lambda **k: build_foundation_presence_joint("fairness", **k),
+    "legitimacy_presence_joint": lambda **k: build_foundation_presence_joint("legitimacy", **k),
+    "loyalty_presence_joint": lambda **k: build_foundation_presence_joint("loyalty", **k),
+    "purity_presence_joint": lambda **k: build_foundation_presence_joint("purity", **k),
     "physharm_joint": build_physharm_joint,
     "autonomy_joint": build_autonomy_joint,
     "care_v2_joint": build_care_v2,
