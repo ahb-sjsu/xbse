@@ -256,6 +256,74 @@ def build_foundation_joint(name: str, holdout_frac: float = 0.1) -> JointPairSou
     )
 
 
+# --------------------------------------------- Phase A: general moral valence (bifactor channel 0)
+# The FAMILY-POOLED general factor G. Unlike a foundation feeder it applies NO category/keyword
+# filter — it pools signed RoTs across ALL foundation categories (and uncategorized), so it learns
+# the general good/bad direction, not a foundation. Second corpus = ETHICS-commonsense OVERALL
+# (all rows, signed by label), a genuinely different-provenance signed valence source. Deterministic
+# down-sample keeps the pool comparable in size to the specific feeders and the run tractable.
+# See experiments/prereg_bifactor_readout.md (prereg 2026-07-12).
+def _social_chem_all_signed(cap=40000):
+    """All Social-Chem RoTs with a non-zero action-moral-judgment sign, NO category/keyword filter."""
+    rows = []
+    with _open(SOCIAL_CHEM, newline="") as f:
+        for row in csv.DictReader(f, delimiter="\t"):
+            try:
+                if int(row.get("rot-agree") or 0) < 3:
+                    continue
+            except (TypeError, ValueError):
+                continue
+            rot = (row.get("rot") or "").strip()
+            if not rot:
+                continue
+            sign = _sc_sign(row.get("action-moral-judgment"))
+            if sign != "0":
+                rows.append((rot, sign))
+    if cap and len(rows) > cap:
+        import random
+
+        random.Random(0).shuffle(rows)
+        rows = rows[:cap]
+    return rows
+
+
+def _ethics_all_signed(cap=20000):
+    """All ETHICS-commonsense rows, signed by label (1=wrong->'-', 0=ok->'+'), NO keyword filter."""
+    rows = []
+    with _open(ETHICS_CS) as f:
+        for line in f:
+            try:
+                d = json.loads(line)
+            except (ValueError, TypeError):
+                continue
+            text = (d.get("text") or "").strip()
+            if len(text) < 12:
+                continue
+            lab = int(d.get("label", 0))
+            rows.append((text, "-" if lab == 1 else "+"))
+    if cap and len(rows) > cap:
+        import random
+
+        random.Random(0).shuffle(rows)
+        rows = rows[:cap]
+    return rows
+
+
+def build_general_valence_joint(holdout_frac: float = 0.12) -> JointPairSource:
+    """G = general moral valence (bifactor channel 0). Pooled signed Social-Chem (all categories)
+    x all signed ETHICS-commonsense. Gated identically to every axis (Phase A1)."""
+    return JointPairSource(
+        name="general_valence_joint",
+        domains=[
+            ("socialchem_pooled", _social_chem_all_signed()),
+            ("ethics_all", _ethics_all_signed()),
+        ],
+        holdout_frac=holdout_frac,
+        invariant_structure="general moral valence (good vs bad), shared across all-foundation RoTs and all-topic scenarios",
+        label_source="Social-Chem action-moral-judgment sign (all categories) + ETHICS commonsense label (all topics)",
+    )
+
+
 # ------------------------------------------ v2 independent-corpus feeders (prereg experiment)
 # Replace the shared ETHICS second corpus with a DIFFERENT-provenance signed corpus, keeping
 # Social-Chem as the first corpus, so the change is isolated. Tests whether corpus independence
@@ -602,6 +670,7 @@ _RAW_BUILDERS = {
     "epistemic_joint": lambda **k: build_foundation_joint("epistemic", **k),
     "loyalty_joint": lambda **k: build_foundation_joint("loyalty", **k),      # B1 (MoralVector roadmap)
     "purity_joint": lambda **k: build_foundation_joint("purity", **k),        # B1 (MoralVector roadmap)
+    "general_valence_joint": build_general_valence_joint,                     # Phase A1 (bifactor G)
     "physharm_joint": build_physharm_joint,
     "autonomy_joint": build_autonomy_joint,
     "care_v2_joint": build_care_v2,
