@@ -175,4 +175,41 @@ axes, but A2 shows they are **not independent of G on this test** — precisely 
 refinement, not a retraction: they are real moral-valence signals that are (on shared-corpus data)
 largely the general factor. D1 decides whether that survives cross-provenance.
 
+### A2-overlap diagnostic (2026-07-12) — the collapse is REAL, not corpus memorization. Do NOT delete the family axes.
+
+The A2 confound resolved cheaply, *before* any readout demotion: partition each family axis's held-eval
+items by whether G's training set contains that exact text (SHA-256), then recompute G→axis on the
+**never-seen** half. Data: `experiments/bifactor_overlap_result.json`.
+
+| axis | % held items in G-train | G→axis (seen) | **G→axis (UNSEEN)** | β (unseen) | residual self-AUROC (unseen) |
+|---|---:|---:|---:|---:|---:|
+| care | 26.6% | 0.995 | **0.990** | 0.987 | 0.606 |
+| fairness | 28.0% | 0.995 | **0.993** | 0.984 | 0.669 |
+| legitimacy | 31.1% | 0.999 | **0.997** | 0.984 | 0.584 |
+| epistemic | 25.1% | 0.958 | **0.923** | 0.792 | 0.740 |
+| loyalty | 28.9% | 1.000 | **0.992** | 0.957 | 0.756 |
+| purity | 26.6% | 0.991 | **0.994** | 0.967 | 0.688 |
+| **physharm (control)** | 14.0% | 0.976 | **0.805** | 0.369 | 0.750 |
+
+**Verdict: the family collapse is a real, generalizing shared factor — not instance memorization.**
+G predicts each family axis on text it *never trained on* essentially as well as on text it did (drop
+≤ 0.035; β on unseen still 0.96–0.99). The **physharm control validates the test's sensitivity**: with
+lower overlap it drops 0.976 → 0.805 and β 0.54 → 0.37, i.e. the method *does* expose overlap-inflation
+when it exists — and physharm stays genuinely separable (low β, residual 0.75). So the ~27–31% literal
+overlap is *not* what drives the family's collinearity with G.
+
+**But the family axes are NOT hollow.** Every family residual (after removing G) is **above chance on
+unseen items** (0.58–0.76). So the right representation is **not deletion and not six-independent-axes** —
+it is the **bifactor form: G on channel 0 + a small residual r_k per axis**. That keeps *every* salient
+dimension in the vector (no coverage lost — the end goal) while being honest that in this register the
+family is ~0.96–0.99 the general factor. This *corrects the A2 "demote into G" language*: demote =
+re-parameterize as G + r_k, **not** drop.
+
+**Precise boundary (what is and isn't settled):** this rules out instance-memorization, but the unseen
+items are still the *same register/provenance* (Social-Chem RoTs + ETHICS scenarios). The shared factor
+is proven real **within the prescriptive-moral register**; whether care/loyalty/purity re-separate under
+a *different* register or provenance is **D1/B5**, not answered here. What genuinely *adds* independent
+coverage beyond G is the low-β set — privacy, physharm, identity_attack, autonomy — plus G's blind spots
+(autonomy at chance) and the still-untested MAC/MFT dimensions (property, reciprocity → B4).
+
 **A4 (Schramowski cosine) still not run.** Deferred with A-phase writeup.

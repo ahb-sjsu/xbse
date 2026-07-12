@@ -1,0 +1,139 @@
+{
+  "phase": "A2_overlap_diagnostic",
+  "cap_per_sign": 400,
+  "axes": [
+    {
+      "axis": "care",
+      "n_total": 800,
+      "frac_in_G_train": 0.2662,
+      "G_SEEN": {
+        "n": 213,
+        "g_auroc": 0.9946,
+        "self_auroc": 0.9934,
+        "beta": 0.9666,
+        "resid_self_auroc": 0.7812
+      },
+      "G_UNSEEN": {
+        "n": 587,
+        "g_auroc": 0.9899,
+        "self_auroc": 0.9974,
+        "beta": 0.9868,
+        "resid_self_auroc": 0.6064
+      }
+    },
+    {
+      "axis": "fairness",
+      "n_total": 800,
+      "frac_in_G_train": 0.28,
+      "G_SEEN": {
+        "n": 224,
+        "g_auroc": 0.995,
+        "self_auroc": 0.9769,
+        "beta": 0.9959,
+        "resid_self_auroc": 0.5561
+      },
+      "G_UNSEEN": {
+        "n": 576,
+        "g_auroc": 0.9934,
+        "self_auroc": 0.9921,
+        "beta": 0.9835,
+        "resid_self_auroc": 0.6694
+      }
+    },
+    {
+      "axis": "legitimacy",
+      "n_total": 800,
+      "frac_in_G_train": 0.3113,
+      "G_SEEN": {
+        "n": 249,
+        "g_auroc": 0.9985,
+        "self_auroc": 1.0,
+        "beta": 0.9676,
+        "resid_self_auroc": 0.64
+      },
+      "G_UNSEEN": {
+        "n": 551,
+        "g_auroc": 0.9968,
+        "self_auroc": 0.9961,
+        "beta": 0.9841,
+        "resid_self_auroc": 0.5837
+      }
+    },
+    {
+      "axis": "epistemic",
+      "n_total": 629,
+      "frac_in_G_train": 0.2512,
+      "G_SEEN": {
+        "n": 158,
+        "g_auroc": 0.958,
+        "self_auroc": 0.9667,
+        "beta": 0.8715,
+        "resid_self_auroc": 0.7251
+      },
+      "G_UNSEEN": {
+        "n": 471,
+        "g_auroc": 0.9233,
+        "self_auroc": 0.938,
+        "beta": 0.7915,
+        "resid_self_auroc": 0.7395
+      }
+    },
+    {
+      "axis": "loyalty",
+      "n_total": 800,
+      "frac_in_G_train": 0.2888,
+      "G_SEEN": {
+        "n": 231,
+        "g_auroc": 1.0,
+        "self_auroc": 0.9993,
+        "beta": 0.9693,
+        "resid_self_auroc": 0.743
+      },
+      "G_UNSEEN": {
+        "n": 569,
+        "g_auroc": 0.9924,
+        "self_auroc": 0.9933,
+        "beta": 0.957,
+        "resid_self_auroc": 0.7557
+      }
+    },
+    {
+      "axis": "purity",
+      "n_total": 677,
+      "frac_in_G_train": 0.2659,
+      "G_SEEN": {
+        "n": 180,
+        "g_auroc": 0.9907,
+        "self_auroc": 0.9984,
+        "beta": 0.9631,
+        "resid_self_auroc": 0.7642
+      },
+      "G_UNSEEN": {
+        "n": 497,
+        "g_auroc": 0.994,
+        "self_auroc": 0.9991,
+        "beta": 0.967,
+        "resid_self_auroc": 0.6882
+      }
+    },
+    {
+      "axis": "physharm",
+      "n_total": 506,
+      "frac_in_G_train": 0.1403,
+      "G_SEEN": {
+        "n": 71,
+        "g_auroc": 0.9756,
+        "self_auroc": 0.8645,
+        "beta": 0.5408,
+        "resid_self_auroc": 0.5412
+      },
+      "G_UNSEEN": {
+        "n": 435,
+        "g_auroc": 0.8051,
+        "self_auroc": 0.8401,
+        "beta": 0.369,
+        "resid_self_auroc": 0.7503
+      }
+    }
+  ]
+}

@@ -68,13 +68,17 @@ measured, not asserted.
   informatively.** Per-item r_k = s_k − β_k·G, β_k on a disjoint calibration half. Removing G collapses
   mean off-diagonal transfer 0.726 → 0.527 (near chance) — the shared-factor signature. But the 11 axes
   split two ways: **(A) the Social-Chem family** (care, fairness, legitimacy, epistemic, loyalty, purity)
-  is **collinear with G** (β ≈ 0.98, residual diagonal collapses) → demote into G; **(B) independent-corpus
-  axes** (privacy, physharm, identity_attack, autonomy) are **separable** (β ≈ 0, dominant residual
-  diagonal) → keep. ⇒ **G relabelled as the *Social-Chem-family shared valence*, not a universal factor;
-  effective independent structure ≈ G + ~4 specifics ≈ 5** (mechanism for the 5.68/9 rank). **Confound:**
-  G's corpus contains family A's RoTs, so A's collapse is shown *on shared-corpus data* and handed to **D1**
-  (cross-provenance) to settle; population B's separation is confound-free. See the A2 RESULT in the prereg
-  + `bifactor_A2_result.json`.
+  is **collinear with G** (β ≈ 0.98); **(B) independent-corpus axes** (privacy, physharm, identity_attack,
+  autonomy) are **separable** (β ≈ 0, dominant residual diagonal). **Overlap diagnostic (2026-07-12)
+  settles the confound cheaply:** G predicts the family on text it *never trained on* as well as on seen
+  text (drop ≤ 0.035; β 0.96–0.99 on unseen) — the collapse is a **real generalizing shared factor, NOT
+  corpus memorization** (physharm control drops 0.98→0.81, proving the test is sensitive). **But family
+  residuals stay above chance (0.58–0.76)**, so the family axes are **not hollow**. ⇒ Represent as the
+  **bifactor form — G on channel 0 + a small residual r_k per axis — keeping every dimension** (no coverage
+  lost), not deletion and not six-independent-axes. Boundary: proven **within the prescriptive register**;
+  cross-register/provenance separation is **D1/B5**. Independent coverage beyond G comes from the low-β set
+  (privacy/physharm/identity_attack/autonomy) + G's blind spots + untested MAC dims (property/reciprocity,
+  B4). See prereg A2 RESULT + `bifactor_A2_result.json` + `bifactor_overlap_result.json`.
 - **A3. Two quality numbers per channel.** The margin↔fuzz dissociation is measured (legitimacy:
   weakest margin, high fuzz; environmental: reverse) — the vector schema carries **both** per axis:
   discriminative margin and invariance fuzz. A consumer can require either or both.
