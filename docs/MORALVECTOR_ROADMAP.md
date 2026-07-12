@@ -154,12 +154,16 @@ measured, not asserted.
 
 *Each is a pre-registered study that both improves the vector and produces a publishable result.*
 
-- **D1. TDM vs MFT rank adjudication.** Theory of Dyadic Morality (Schein & Gray 2018; Gray et al.
-  2012) predicts one harm-templated factor; MFT predicts ~5–6. Prereg: (i) pc0's correlation with
-  eMFD-harm vs other foundations; (ii) whether B1's loyalty/purity survive residualization against
-  G; (iii) effective rank of the extended vector. Our existing evidence (dominant factor + removable
-  collapse + residualizable specifics) already leans anti-strong-TDM; the extended test settles our
-  corner of it with a new evidence type.
+- **D1. TDM vs MFT rank adjudication. ◑ PARTIAL 2026-07-12 (cross-register leg done).** Theory of Dyadic
+  Morality (Schein & Gray 2018; Gray et al. 2012) predicts one harm-templated factor; MFT predicts ~5–6.
+  **Cross-register result (MFRC Reddit):** our *valence* feeders show no foundation selectivity across
+  register (all ≈ 0.5), BUT a linear probe on pretrained BGE-M3 embeddings **separates the foundations at
+  mean AUROC 0.748** (care 0.73 … purity 0.83). ⇒ **foundations are distinct-but-correlated dimensions;
+  the A2 collapse is a property of the VALENCE readout, not the moral space** — MFT-leaning, anti-strong-TDM,
+  with a new evidence type. The identity axis is orthogonal to G and survives the register change. Fix is
+  *additive*: keep G + valence residuals, **add foundation-presence channels** (train on MFRC/MFTC labels).
+  See prereg D1/B5 section + `d1_register_result.json` + `d1_probe_result.json`. Still to do: (i) pc0↔eMFD-harm
+  correlation; (iii) effective rank of the extended vector. Prereg the remaining legs first.
 - **D2. Circumplex geometry test.** Schwartz's values (1992; 2012 refinement) organize on a validated
   circle — adjacency = compatibility, opposition = conflict. Test whether feeder correlation
   geometry reproduces opposition structure (candidate: autonomy vs legitimacy/authority). A

@@ -1,0 +1,154 @@
+{
+  "phase": "D1_B5_cross_register_MFRC",
+  "register": "MFRC Reddit (foundation-annotated) vs Social-Chem prescriptive RoTs",
+  "n_per_foundation": {
+    "care": 500,
+    "fairness": 500,
+    "legitimacy": 500,
+    "loyalty": 500,
+    "purity": 500
+  },
+  "n_nonmoral": 500,
+  "selectivity_matrix": {
+    "G": {
+      "care": 0.4844,
+      "fairness": 0.493,
+      "legitimacy": 0.4232,
+      "loyalty": 0.4916,
+      "purity": 0.59
+    },
+    "care": {
+      "care": 0.4829,
+      "fairness": 0.464,
+      "legitimacy": 0.473,
+      "loyalty": 0.5093,
+      "purity": 0.5596
+    },
+    "fairness": {
+      "care": 0.4955,
+      "fairness": 0.462,
+      "legitimacy": 0.4833,
+      "loyalty": 0.4539,
+      "purity": 0.5944
+    },
+    "legitimacy": {
+      "care": 0.465,
+      "fairness": 0.4652,
+      "legitimacy": 0.5098,
+      "loyalty": 0.5188,
+      "purity": 0.5353
+    },
+    "loyalty": {
+      "care": 0.5468,
+      "fairness": 0.5002,
+      "legitimacy": 0.4424,
+      "loyalty": 0.4492,
+      "purity": 0.5584
+    },
+    "purity": {
+      "care": 0.5047,
+      "fairness": 0.4725,
+      "legitimacy": 0.4956,
+      "loyalty": 0.4694,
+      "purity": 0.5735
+    }
+  },
+  "selectivity_residualized_vs_G": {
+    "care": {
+      "care": 0.4852,
+      "fairness": 0.4651,
+      "legitimacy": 0.4879,
+      "loyalty": 0.5112,
+      "purity": 0.5423
+    },
+    "fairness": {
+      "care": 0.4994,
+      "fairness": 0.4615,
+      "legitimacy": 0.5041,
+      "loyalty": 0.4535,
+      "purity": 0.5754
+    },
+    "legitimacy": {
+      "care": 0.4656,
+      "fairness": 0.4655,
+      "legitimacy": 0.5138,
+      "loyalty": 0.5191,
+      "purity": 0.5308
+    },
+    "loyalty": {
+      "care": 0.5498,
+      "fairness": 0.5009,
+      "legitimacy": 0.4561,
+      "loyalty": 0.4535,
+      "purity": 0.5395
+    },
+    "purity": {
+      "care": 0.5051,
+      "fairness": 0.4747,
+      "legitimacy": 0.5079,
+      "loyalty": 0.4728,
+      "purity": 0.5572
+    }
+  },
+  "beta_on_G": {
+    "care": 0.1914,
+    "fairness": 0.266,
+    "legitimacy": 0.0501,
+    "loyalty": 0.1153,
+    "purity": 0.1246
+  },
+  "presence_matrix": {
+    "G": {
+      "care": 0.5285,
+      "fairness": 0.5383,
+      "legitimacy": 0.478,
+      "loyalty": 0.5373,
+      "purity": 0.6149
+    },
+    "care": {
+      "care": 0.4955,
+      "fairness": 0.4849,
+      "legitimacy": 0.4874,
+      "loyalty": 0.5142,
+      "purity": 0.5537
+    },
+    "fairness": {
+      "care": 0.5006,
+      "fairness": 0.471,
+      "legitimacy": 0.4973,
+      "loyalty": 0.4686,
+      "purity": 0.5773
+    },
+    "legitimacy": {
+      "care": 0.4376,
+      "fairness": 0.4333,
+      "legitimacy": 0.4779,
+      "loyalty": 0.4841,
+      "purity": 0.5027
+    },
+    "loyalty": {
+      "care": 0.6321,
+      "fairness": 0.6168,
+      "legitimacy": 0.5563,
+      "loyalty": 0.5679,
+      "purity": 0.6558
+    },
+    "purity": {
+      "care": 0.582,
+      "fairness": 0.5563,
+      "legitimacy": 0.5606,
+      "loyalty": 0.544,
+      "purity": 0.6371
+    }
+  },
+  "summary": {
+    "family_selectivity_diag_dominant_axes": 1,
+    "residualized_selectivity_diag_dominant_axes": 1,
+    "n_foundations": 5,
+    "family_selectivity_mean_diag": 0.4955,
+    "family_selectivity_mean_offdiag": 0.5004,
+    "G_mean_selectivity": 0.4964,
+    "residualized_mean_diag": 0.4942,
+    "interpretation_key": "family diag >> G_mean_selectivity (~0.5) => foundations DISTINCT in MFRC (register-specific collapse). family diag ~ G ~ 0.5 => one factor across registers."
+  }
+}

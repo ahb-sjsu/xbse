@@ -212,4 +212,45 @@ a *different* register or provenance is **D1/B5**, not answered here. What genui
 coverage beyond G is the low-β set — privacy, physharm, identity_attack, autonomy — plus G's blind spots
 (autonomy at chance) and the still-untested MAC/MFT dimensions (property, reciprocity → B4).
 
+### D1/B5 (2026-07-12) — cross-register test (MFRC Reddit): the foundations ARE distinct dimensions; our VALENCE feeders just don't read that axis.
+
+Tested on MFRC (Reddit dialogue, foundation-annotated) — a different register **and** provenance from
+Social-Chem prescriptive RoTs. Two instruments:
+
+**(1) Valence-feeder selectivity** — does `|feeder_k|` pick out foundation-k vs the *other* foundations?
+Family mean diagonal **0.496** ≈ off-diagonal 0.500 ≈ G 0.496 — **all at chance**; 1/5 diagonal-dominant;
+residualizing G doesn't help. Confound: every feeder peaks on the *purity* column — `|value|` tracks
+valence-*extremity*, not foundation. ⇒ our valence feeders carry **no foundation selectivity** across
+register. Data: `experiments/d1_register_result.json`.
+
+**(2) Linear probe on pretrained BGE-M3 embeddings** — is foundation *identity* linearly present at all,
+independent of our feeders? One-vs-other-foundations 5-fold CV AUROC: care 0.733, fairness 0.712,
+legitimacy 0.713, loyalty 0.757, purity 0.828, **mean 0.748**; presence-vs-non-moral 0.63–0.90. ⇒
+foundation identity **IS separable** in a general semantic space. Data: `experiments/d1_probe_result.json`.
+
+**Reconciliation — the whole A-phase closes:**
+- The foundations **are distinct salient dimensions** (0.75 separable; distinct-but-*correlated*, exactly
+  MFT's own finding that foundations correlate).
+- They collapse into G in A2 **because our feeders are VALENCE feeders**: "upheld vs violated" is a shared
+  good/bad axis common to all foundations, so per-foundation *valence* scores are ~collinear (β≈0.98). The
+  collapse is a property of the **valence readout**, not of the moral space.
+- Foundation *identity* is therefore a real, recoverable axis that is **orthogonal to the valence axis**
+  our feeders capture — and it survives the register change (it's in MFRC too, at 0.75).
+
+**Implication for the MoralVector (the end goal — capture all salient dimensions):** represent **two
+factors explicitly**, not a bundle of per-foundation valence scores that collapse —
+1. **valence** = G (how good/bad), shared across foundations;
+2. **foundation identity / engagement** = separate *presence* channels (0.75-separable), which the current
+   per-foundation valence feeders discard.
+
+The current DEME design *conflates* these (each feeder = one foundation's valence), which is exactly why
+they collapse into G. The fix is **additive, not subtractive**: keep G + the valence residuals, and add
+foundation-presence channels trained on MFRC/MFTC foundation labels. No salient dimension is lost; the
+readout becomes honest about the **valence × foundation** structure.
+
+**Caveats:** 0.75 (not 0.95) ⇒ foundations overlap substantially even in identity (correlated, not
+orthogonal). Probe separability is partly semantic/topical — legitimately what distinguishes foundations
+for scenario evaluation, but "distinct" here means *distinguishable-and-correlated*, not independent.
+Building the actual foundation-presence channels is the follow-on (B/C phase).
+
 **A4 (Schramowski cosine) still not run.** Deferred with A-phase writeup.

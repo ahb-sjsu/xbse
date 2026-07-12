@@ -1,0 +1,50 @@
+{
+  "phase": "D1_B5_linear_probe_MFRC",
+  "encoder": "pretrained BAAI/bge-m3 (not BSE-fine-tuned)",
+  "distinctness_vs_other_foundations": {
+    "care": {
+      "auroc": 0.7331,
+      "std": 0.0121
+    },
+    "fairness": {
+      "auroc": 0.7121,
+      "std": 0.0256
+    },
+    "legitimacy": {
+      "auroc": 0.7128,
+      "std": 0.0357
+    },
+    "loyalty": {
+      "auroc": 0.7565,
+      "std": 0.0252
+    },
+    "purity": {
+      "auroc": 0.8275,
+      "std": 0.0228
+    }
+  },
+  "presence_vs_nonmoral": {
+    "care": {
+      "auroc": 0.8002,
+      "std": 0.0179
+    },
+    "fairness": {
+      "auroc": 0.6296,
+      "std": 0.0519
+    },
+    "legitimacy": {
+      "auroc": 0.6273,
+      "std": 0.0569
+    },
+    "loyalty": {
+      "auroc": 0.739,
+      "std": 0.0537
+    },
+    "purity": {
+      "auroc": 0.8951,
+      "std": 0.0998
+    }
+  },
+  "mean_distinctness_auroc": 0.7484,
+  "verdict_key": "mean distinctness >> 0.5 => foundations ARE linearly distinct in MFRC (valence feeders miss it; build foundation-presence feeders). ~0.5 => genuinely one factor across registers."
+}
