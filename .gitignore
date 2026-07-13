@@ -21,3 +21,6 @@ wandb/
 
 # applied review patches (kept as docs/review-*.txt)
 *.patch
+
+# NRP / cluster job specs — infra identifiers kept local only
+infra/

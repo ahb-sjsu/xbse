@@ -45,7 +45,13 @@ OUT = os.path.expanduser("~/presence_polar")
 os.makedirs(OUT, exist_ok=True)
 FOUNDATIONS = ["purity", "loyalty", "care", "fairness", "legitimacy"]
 # the fine-tuned lam=0 structure_auroc these must be read against (from presence_feeders/, 2a)
-LAM0_FT = {"purity": 0.7194, "loyalty": 0.6611, "care": 0.5742, "fairness": 0.5687, "legitimacy": 0.585}
+LAM0_FT = {
+    "purity": 0.7194,
+    "loyalty": 0.6611,
+    "care": 0.5742,
+    "fairness": 0.5687,
+    "legitimacy": 0.585,
+}
 
 
 class ResidualEncoder:
@@ -151,7 +157,9 @@ def main():
     json.dump(all_results, open(f"{OUT}/presence_polar_results.json", "w"), indent=2)
     print("\nSAVED " + f"{OUT}/presence_polar_results.json", flush=True)
     n_lift = sum(1 for r in all_results if r["lift_over_raw"] >= 0.05)
-    print(f"SUMMARY {n_lift}/{len(FOUNDATIONS)} foundations lift >=0.05 over raw-frozen", flush=True)
+    print(
+        f"SUMMARY {n_lift}/{len(FOUNDATIONS)} foundations lift >=0.05 over raw-frozen", flush=True
+    )
     print("DONE", flush=True)
 
 

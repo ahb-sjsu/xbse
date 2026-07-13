@@ -46,8 +46,12 @@ def fresh_encoder():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--lam", type=float, default=0.0, help="domain-adversarial max_lambda (0.0=inert)")
-    ap.add_argument("--tag", default="", help="output tag; suffixes ckpts/report/dir, empty=lam=0 baseline")
+    ap.add_argument(
+        "--lam", type=float, default=0.0, help="domain-adversarial max_lambda (0.0=inert)"
+    )
+    ap.add_argument(
+        "--tag", default="", help="output tag; suffixes ckpts/report/dir, empty=lam=0 baseline"
+    )
     a = ap.parse_args()
     lam, suffix = a.lam, (f"_{a.tag}" if a.tag else "")
     out = os.path.expanduser(f"~/bifactor_A1{suffix}")
