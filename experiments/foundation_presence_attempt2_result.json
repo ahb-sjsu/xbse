@@ -1,0 +1,27 @@
+{
+  "experiment": "foundation_presence_attempt2",
+  "date": "2026-07-13",
+  "encoder": "BAAI/bge-m3",
+  "train": {
+    "path": "build_presence_feeders.py -> train_adversarial (joint cross-corpus contrastive)",
+    "epochs": 6,
+    "batch_size": 24,
+    "lr": 2e-05,
+    "max_steps": 1200,
+    "max_lambda": 0.0,
+    "domain_adversarial": false,
+    "adversary_note": "max_lambda=0.0 -> DANN gradient-reversal INERT the whole run (every step lam0.00, final domain_acc=1.0). This is the two-corpus joint-contrastive baseline, NOT the domain-adversarial test. The genuine max_lambda=1.0 run is a separate artifact.",
+    "corpora": ["Social-Chem rot-moral-foundations", "MFRC Reddit foundation annotations"],
+    "labels": "presence ('+' = foundation-k engaged, '-' = a different foundation), valence-agnostic"
+  },
+  "gate": "cross-dataset held-out PRESENCE AUROC beats BOTH untrained-encoder null AND TF-IDF BoW null by >=0.10, fuzz>1.0",
+  "n_passed": 2,
+  "n_total": 5,
+  "results": [
+    {"dim": "care_presence_joint",       "trained_auroc": 0.5742, "untrained_null": 0.5234, "bow_null": 0.4896, "margin_vs_max_null": 0.0508, "fuzz_ratio": 15.4174, "gate_passed": false, "n_rows": 3968, "checkpoint": "xbse_ckpt/care_presence_joint.pt",       "checkpoint_hash": "efda193dc543b616"},
+    {"dim": "fairness_presence_joint",   "trained_auroc": 0.5687, "untrained_null": 0.5150, "bow_null": 0.5173, "margin_vs_max_null": 0.0514, "fuzz_ratio": 16.9289, "gate_passed": false, "n_rows": 4068, "checkpoint": "xbse_ckpt/fairness_presence_joint.pt",   "checkpoint_hash": "d9dbaaa3f50cec02"},
+    {"dim": "legitimacy_presence_joint", "trained_auroc": 0.5850, "untrained_null": 0.4825, "bow_null": 0.5003, "margin_vs_max_null": 0.0846, "fuzz_ratio": 15.5857, "gate_passed": false, "n_rows": 4113, "checkpoint": "xbse_ckpt/legitimacy_presence_joint.pt", "checkpoint_hash": "cc0758cc4f78334d"},
+    {"dim": "loyalty_presence_joint",    "trained_auroc": 0.6611, "untrained_null": 0.5574, "bow_null": 0.5214, "margin_vs_max_null": 0.1037, "fuzz_ratio": 28.3883, "gate_passed": true,  "n_rows": 4097, "checkpoint": "xbse_ckpt/loyalty_presence_joint.pt",    "checkpoint_hash": "377f1bc8977fbf35"},
+    {"dim": "purity_presence_joint",     "trained_auroc": 0.7194, "untrained_null": 0.5347, "bow_null": 0.5027, "margin_vs_max_null": 0.1846, "fuzz_ratio": 21.2618, "gate_passed": true,  "n_rows": 3892, "checkpoint": "xbse_ckpt/purity_presence_joint.pt",     "checkpoint_hash": "1997cb0b3ac9d12a"}
+  ]
+}

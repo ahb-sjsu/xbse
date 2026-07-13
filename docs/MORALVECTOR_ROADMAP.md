@@ -164,10 +164,17 @@ measured, not asserted.
   *within-register* — a linear presence head trained on Social-Chem does **NOT** transfer to MFRC
   (0.51–0.58, ≤ BoW null; `foundation_presence_findings.md`), because a plain probe overfits register
   where the valence feeders transfer only via domain-adversarial training. Fix is *additive but needs the
-  right method*: keep G + valence residuals; a transferable foundation-presence channel requires a
-  **domain-adversarial contrastive presence feeder** (attempt 2, not yet run) — or identity is
-  register-bound. See prereg D1/B5 + `d1_register_result.json` + `d1_probe_result.json` +
-  `foundation_presence_result.json`. Still to do: (i) pc0↔eMFD-harm; (iii) extended-vector effective rank.
+  right method*: keep G + valence residuals; a transferable foundation-presence channel needs more than a
+  frozen linear probe. **Attempt 2 RUN (2026-07-13):** the two-corpus joint-contrastive presence feeder
+  recovers cross-register transfer for **purity (0.719) and loyalty (0.661) — 2/5 pass**, the two most
+  lexically distinct binding foundations; care/fairness/legitimacy still fail (margins <= 0.085). **Caveat
+  that reshapes the D1 story:** attempt-2a ran with the domain-adversarial term OFF (`max_lambda=0.0`,
+  adversary inert, `domain_acc=1.0`) — so the transfer came from **joint-contrastive fine-tuning, not
+  register-invariance**, and the earlier "valence transfers *because of* domain-adversarial training" claim
+  is corrected (B1 valence passed at lam=0 too). The genuine lam=1 adversarial run (**attempt 2b**) is in
+  flight to isolate the adversary's contribution. See `foundation_presence_findings.md` (rewritten) +
+  `foundation_presence_attempt2_result.json` + prereg D1/B5 + `d1_register_result.json` +
+  `d1_probe_result.json`. Still to do: (i) pc0↔eMFD-harm; (iii) extended-vector effective rank; (iv) 2b verdict.
 - **D2. Circumplex geometry test.** Schwartz's values (1992; 2012 refinement) organize on a validated
   circle — adjacency = compatibility, opposition = conflict. Test whether feeder correlation
   geometry reproduces opposition structure (candidate: autonomy vs legitimacy/authority). A
