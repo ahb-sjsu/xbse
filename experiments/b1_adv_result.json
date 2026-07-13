@@ -1,0 +1,44 @@
+[
+  {
+    "dim": "loyalty_adv_joint",
+    "max_lambda": 1.0,
+    "domain_adversarial": true,
+    "trained_auroc": 0.8924,
+    "untrained_null": 0.4108,
+    "bow_null": 0.505,
+    "margin_vs_max_null": 0.3874,
+    "fuzz_ratio": 1867.0774,
+    "gate_passed": true,
+    "n_rows": 23739,
+    "by_domain": {
+      "0": 23137,
+      "1": 602
+    },
+    "checkpoint": "/home/claude/xbse_ckpt/loyalty_adv_joint.pt",
+    "mfrc_presence_crosscheck": {
+      "auroc_presence": 0.5635,
+      "n_per_class": 800
+    }
+  },
+  {
+    "dim": "purity_adv_joint",
+    "max_lambda": 1.0,
+    "domain_adversarial": true,
+    "trained_auroc": 0.8014,
+    "untrained_null": 0.4037,
+    "bow_null": 0.6556,
+    "margin_vs_max_null": 0.1458,
+    "fuzz_ratio": 491.3864,
+    "gate_passed": true,
+    "n_rows": 9637,
+    "by_domain": {
+      "0": 9300,
+      "1": 337
+    },
+    "checkpoint": "/home/claude/xbse_ckpt/purity_adv_joint.pt",
+    "mfrc_presence_crosscheck": {
+      "auroc_presence": 0.6492,
+      "n_per_class": 782
+    }
+  }
+]

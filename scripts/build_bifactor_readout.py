@@ -19,6 +19,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # leave GPU 0
 os.environ.setdefault("HF_HOME", "/archive/cache/huggingface")
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
+import argparse  # noqa: E402
 import json  # noqa: E402
 import random  # noqa: E402
 import sys  # noqa: E402
@@ -36,9 +37,6 @@ from xbse.train_adv import train_adversarial  # noqa: E402
 from xbse.validate import gate  # noqa: E402
 
 CKDIR = os.path.expanduser("~/xbse_ckpt")
-OUT = os.path.expanduser("~/bifactor_A1")
-os.makedirs(OUT, exist_ok=True)
-os.makedirs(CKDIR, exist_ok=True)
 SEEDS = [0, 1, 2]
 
 
@@ -47,6 +45,15 @@ def fresh_encoder():
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--lam", type=float, default=0.0, help="domain-adversarial max_lambda (0.0=inert)")
+    ap.add_argument("--tag", default="", help="output tag; suffixes ckpts/report/dir, empty=lam=0 baseline")
+    a = ap.parse_args()
+    lam, suffix = a.lam, (f"_{a.tag}" if a.tag else "")
+    out = os.path.expanduser(f"~/bifactor_A1{suffix}")
+    os.makedirs(out, exist_ok=True)
+    os.makedirs(CKDIR, exist_ok=True)
+    print(f"[config] lam={lam} tag='{a.tag}' out={out}", flush=True)
     print("\n===== general_valence (G) — Phase A1 =====", flush=True)
     src = build_general_valence_joint(holdout_frac=0.12)
     rows = src._rows()
@@ -93,8 +100,8 @@ def main():
         np.random.seed(s)
         enc = fresh_encoder()
         src.bar = bar
-        ckpt = f"{CKDIR}/general_valence_joint_s{s}.pt"
-        rpt = f"{CKDIR}/general_valence_joint_report_s{s}.json"
+        ckpt = f"{CKDIR}/general_valence_joint{suffix}_s{s}.pt"
+        rpt = f"{CKDIR}/general_valence_joint{suffix}_report_s{s}.json"
         train_adversarial(
             enc,
             src,
@@ -102,7 +109,7 @@ def main():
             batch_size=24,
             lr=2e-5,
             max_steps=1200,
-            max_lambda=0.0,
+            max_lambda=lam,
             checkpoint_path=ckpt,
             report_path=rpt,
         )
@@ -118,7 +125,7 @@ def main():
             "margin_vs_max_null": round(margin, 4),
             "fuzz_ratio": round(fuzz, 4),
             "gate_passed": passed,
-            "checkpoint": f"xbse_ckpt/general_valence_joint_s{s}.pt",
+            "checkpoint": f"xbse_ckpt/general_valence_joint{suffix}_s{s}.pt",
         }
         per_seed.append(row)
         print("SEED_RESULT " + json.dumps(row), flush=True)
@@ -130,7 +137,9 @@ def main():
     margins = [r["margin_vs_max_null"] for r in per_seed]
     fuzzes = [r["fuzz_ratio"] for r in per_seed]
     result = {
-        "dim": "general_valence_joint",
+        "dim": f"general_valence_joint{suffix}",
+        "max_lambda": lam,
+        "domain_adversarial": lam > 0.0,
         "auroc_mean": round(float(np.mean(aurocs)), 4),
         "auroc_std": round(float(np.std(aurocs)), 4),
         "margin_mean": round(float(np.mean(margins)), 4),
@@ -145,9 +154,9 @@ def main():
         "n_seeds": len(SEEDS),
         "per_seed": per_seed,
     }
-    json.dump(result, open(f"{OUT}/bifactor_A1_result.json", "w"), indent=2)
+    json.dump(result, open(f"{out}/bifactor_A1_result.json", "w"), indent=2)
     print("\nRESULT " + json.dumps(result), flush=True)
-    print(f"SAVED {OUT}/bifactor_A1_result.json", flush=True)
+    print(f"SAVED {out}/bifactor_A1_result.json", flush=True)
     print("DONE", flush=True)
 
 

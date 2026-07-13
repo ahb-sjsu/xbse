@@ -1,0 +1,48 @@
+{
+  "dim": "general_valence_joint_adv",
+  "max_lambda": 1.0,
+  "domain_adversarial": true,
+  "auroc_mean": 0.8501,
+  "auroc_std": 0.0132,
+  "margin_mean": 0.3307,
+  "min_fuzz": 137.308,
+  "untrained_null": 0.4801,
+  "bow_null": 0.5194,
+  "max_null_frozen": 0.5194,
+  "gate_passed": true,
+  "n_rows": 51319,
+  "by_domain": {
+    "0": 32606,
+    "1": 18713
+  },
+  "n_seeds": 3,
+  "per_seed": [
+    {
+      "seed": 0,
+      "trained_auroc": 0.8569,
+      "bow_null": 0.5194,
+      "margin_vs_max_null": 0.3376,
+      "fuzz_ratio": 190.5626,
+      "gate_passed": true,
+      "checkpoint": "xbse_ckpt/general_valence_joint_adv_s0.pt"
+    },
+    {
+      "seed": 1,
+      "trained_auroc": 0.8317,
+      "bow_null": 0.5194,
+      "margin_vs_max_null": 0.3123,
+      "fuzz_ratio": 137.308,
+      "gate_passed": true,
+      "checkpoint": "xbse_ckpt/general_valence_joint_adv_s1.pt"
+    },
+    {
+      "seed": 2,
+      "trained_auroc": 0.8617,
+      "bow_null": 0.5194,
+      "margin_vs_max_null": 0.3423,
+      "fuzz_ratio": 279.9219,
+      "gate_passed": true,
+      "checkpoint": "xbse_ckpt/general_valence_joint_adv_s2.pt"
+    }
+  ]
+}

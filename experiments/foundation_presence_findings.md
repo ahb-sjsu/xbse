@@ -95,21 +95,47 @@ cross-register-transferable presence signal for **purity and loyalty**, but **no
 legitimacy (margins ≤ 0.085, below the 0.10 bar). **What 2a does NOT establish:** anything about the
 domain-adversarial mechanism — it was off. Do not describe these as "domain-adversarial" channels.
 
-## Attempt 2b — adversary ON (`max_lambda=1.0`): the genuine test *(running 2026-07-13)*
+## Attempt 2b — adversary ON (`max_lambda=1.0`): the genuine test — DONE 2026-07-13
 
-Re-run with the DANN schedule actually engaged (`--lam 1.0`; logs show `lam` ramping 0→1, `domain_acc`
-driven toward chance), same data/holdout/nulls so it is a like-for-like comparison against 2a. Purpose:
-isolate the adversary's contribution. Three outcomes, each a finding: (i) more than 2/5 pass ⇒
-register-invariance is doing real work beyond joint-contrastive; (ii) still 2/5 ⇒ the joint-contrastive
-signal already carries the transfer and the adversary is redundant for presence; (iii) fewer pass ⇒ the
-adversary *strips* identity along with register, i.e. foundation identity for those axes is expressed
-via register-specific features (an honest negative — identity is partly register-bound). Checkpoints use
-the `_adv` suffix so 2a is preserved. Result will land in `foundation_presence_adv_result.json`.
+Re-run with the DANN schedule actually engaged (`--lam 1.0`; logs confirm `lam` ramped 0→~1 and
+`domain_acc` was driven from 1.0 toward chance ~0.12 — the reversal is **active**), same data/holdout/
+nulls so it is a like-for-like comparison against 2a. Result: `foundation_presence_adv_result.json`.
 
-## Bearing on the MoralVector (updated)
-Pending 2b, the defensible additions to the vector are **purity and loyalty presence channels** on the
-strength of 2a's two-corpus transfer — but flagged **joint-contrastive, adversary-unverified** until 2b
-says whether register-invariance holds or breaks them. Care/fairness/legitimacy **identity** remains
-**not transferable** by either attempt so far and stays scored per-register (or not at all). The
-honest core is still **G (valence) + valence residuals**; presence channels are a measured, caveated
-extension, not a settled dimension.
+| foundation | λ=0 (2a) | λ=1 (2b) | λ=1 margin | λ=1 fuzz | effect | λ=1 gate |
+|---|---:|---:|---:|---:|---|:--|
+| care       | 0.574 ❌ | 0.585 | 0.062 | 17.5 | neutral | ❌ |
+| fairness   | 0.569 ❌ | 0.499 | −0.018 | **0.007** | **stripped to chance** (fuzz collapsed) | ❌ |
+| legitimacy | 0.585 ❌ | 0.544 | 0.043 | 19.1 | hurt | ❌ |
+| **loyalty**| **0.661 ✅** | 0.641 | 0.084 | 18.1 | **hurt — lost its pass** (margin 0.104→0.084) | ❌ |
+| purity     | 0.719 ✅ | 0.699 | 0.164 | 29.6 | dinged but survives | ✅ |
+
+**Outcome (iii): the adversary STRIPS identity.** λ=1 → **1/5 pass** vs λ=0's 2/5. Every foundation was
+neutral-to-degraded; fairness collapsed to a coin flip; loyalty's validated pass was destroyed. The
+adversary provably worked (domain_acc → chance) — it removed register-diagnostic features, and for
+foundation presence that took the identity signal with it. **Conclusion: domain-adversarial training is
+STRICTLY WORSE for presence channels than the λ=0 joint-contrastive config.** Identity and register are
+entangled in the same representational subspace for care/fairness/legitimacy; only purity has enough
+independent signal to survive de-registering.
+
+### Cross-check — PolarQuant shared-mode removal (`presence_polar_result.json`, prereg `prereg_presence_polar.md`)
+A geometric, non-adversarial alternative: remove the dominant shared **angular** modes (register/domain
+axis + top PCs) from frozen BGE-M3, renormalize, re-gate. **Result: 0/5 lift ≥ 0.05; nothing passes.**
+Best case purity +0.026 (still far below the 0.10 bar). The diagnostic is decisive: `|PC₁ · domain_dir|`
+= **0.97–1.00** for every foundation — the top principal component *is* the register axis, so removal is
+well-targeted, yet AUROC barely moves. **The identity signal is not in a subspace orthogonal to the
+shared mode; it is entangled within it.** Removing the register direction removes the identity with it.
+This is a third independent method agreeing with 2b and A2: for care/fairness/legitimacy, foundation
+identity and register occupy the same angular subspace. (Caveat, as pre-registered: this is the frozen
+lower bar; it does not disprove a fine-tuned+residual build, but the geometry argues strongly against
+spending GPU time on one.)
+
+## Bearing on the MoralVector (final for this line of work)
+The defensible presence additions are **purity** (passes at λ=0 *and* λ=1 — robust) and **loyalty**
+(passes at λ=0 only), built via the **λ=0 two-corpus joint-contrastive** config. **Do not use
+domain-adversarial training for presence channels.** Care/fairness/legitimacy identity is **not
+separately transferable** by any of the three methods tried (joint-contrastive, adversarial, geometric)
+and stays scored per-register. The honest core remains **G (valence) + validated valence axes**;
+purity/loyalty presence are a measured, caveated extension. Contrast with the **valence** channels,
+which are register-*invariant* — see `lambda_comparison_result.json`: G, loyalty-valence, and
+purity-valence all pass at λ=0 **and** λ=1 essentially unchanged. Valence transfers regardless; identity
+does not. That dissociation is the headline.

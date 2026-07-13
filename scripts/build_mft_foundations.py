@@ -14,6 +14,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # leave GPU 0
 os.environ.setdefault("HF_HOME", "/archive/cache/huggingface")
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
+import argparse
 import json
 import sys
 from collections import Counter
@@ -31,8 +32,6 @@ from xbse.train_adv import train_adversarial  # noqa: E402
 from xbse.validate import gate  # noqa: E402
 
 CKDIR = os.path.expanduser("~/xbse_ckpt")
-OUT = os.path.expanduser("~/mft_b1")
-os.makedirs(OUT, exist_ok=True)
 AXES = ["loyalty", "purity"]
 MFRC_POS = {"loyalty": {"Loyalty"}, "purity": {"Purity"}}
 
@@ -70,8 +69,8 @@ def mfrc_crosscheck(enc, src, report, axis):
         return {"error": str(e)[:160]}
 
 
-def build_one(axis):
-    print(f"\n===== {axis} =====", flush=True)
+def build_one(axis, lam, suffix):
+    print(f"\n===== {axis} (lam={lam}) =====", flush=True)
     src = build_foundation_joint(axis, holdout_frac=0.12)
     rows = src._rows()
     print(
@@ -104,7 +103,8 @@ def build_one(axis):
         registered="2026-07-12",
     )
 
-    ckpt = f"{CKDIR}/{axis}_joint.pt"
+    ckpt = f"{CKDIR}/{axis}{suffix}_joint.pt"
+    report_path = f"{CKDIR}/{axis}{suffix}_joint_report.json"
     train_adversarial(
         enc,
         src,
@@ -112,9 +112,9 @@ def build_one(axis):
         batch_size=24,
         lr=2e-5,
         max_steps=1200,
-        max_lambda=0.0,
+        max_lambda=lam,
         checkpoint_path=ckpt,
-        report_path=f"{CKDIR}/{axis}_joint_report.json",
+        report_path=report_path,
     )
 
     fin = gate(enc, ev)  # trained
@@ -125,11 +125,13 @@ def build_one(axis):
 
     from xbse.report import Report
 
-    report = Report(**json.load(open(f"{CKDIR}/{axis}_joint_report.json")))
+    report = Report(**json.load(open(report_path)))
     xcheck = mfrc_crosscheck(enc, src, report, axis)
 
     result = {
-        "dim": f"{axis}_joint",
+        "dim": f"{axis}{suffix}_joint",
+        "max_lambda": lam,
+        "domain_adversarial": lam > 0.0,
         "trained_auroc": round(tr, 4),
         "untrained_null": round(null, 4),
         "bow_null": round(bown, 4),
@@ -146,9 +148,17 @@ def build_one(axis):
 
 
 def main():
-    results = [build_one(a) for a in AXES]
-    json.dump(results, open(f"{OUT}/b1_results.json", "w"), indent=2)
-    print("\nSAVED " + f"{OUT}/b1_results.json", flush=True)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--lam", type=float, default=0.0, help="domain-adversarial max_lambda (0.0=inert)")
+    ap.add_argument("--tag", default="", help="output tag; suffixes ckpts/report/dir, empty=lam=0 baseline")
+    a = ap.parse_args()
+    suffix = f"_{a.tag}" if a.tag else ""
+    out = os.path.expanduser(f"~/mft_b1{suffix}")
+    os.makedirs(out, exist_ok=True)
+    print(f"[config] lam={a.lam} tag='{a.tag}' out={out}", flush=True)
+    results = [build_one(a2, a.lam, suffix) for a2 in AXES]
+    json.dump(results, open(f"{out}/b1_results.json", "w"), indent=2)
+    print("\nSAVED " + f"{out}/b1_results.json", flush=True)
     for r in results:
         print(
             f"  {r['dim']}: passed={r.get('gate_passed')} auroc={r.get('trained_auroc')} "

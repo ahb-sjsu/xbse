@@ -62,7 +62,10 @@ measured, not asserted.
   general-valence BSE feeder (pooled signed Social-Chem all-categories × all signed ETHICS, 51,319 rows)
   at 3 seeds: **AUROC 0.856 ± 0.008, +0.337 over max-null (0.519), fuzz ≥ 115 → PASS.** Ships as channel 0,
   replacing the ungated `pc0` PCA projection. See `experiments/prereg_bifactor_readout.md` +
-  `bifactor_A1_result.json`. Psychometric ancestry: bifactor model (Reise 2012); MFT
+  `bifactor_A1_result.json`. **λ-robustness check (2026-07-13): G re-trained at `max_lambda=1.0`
+  (domain-adversarial ON) still PASSES — AUROC 0.850 ± 0.013, margin 0.331, fuzz ≥ 137, 3/3 seeds
+  (`bifactor_A1_adv_result.json`).** G is register-invariant either way; the pre-registered λ=0 choice was
+  sound, not load-bearing. Psychometric ancestry: bifactor model (Reise 2012); MFT
   individualizing/binding structure (Graham et al. 2009, 2011).
 - **A2. Residualize the specifics. ✓ DONE 2026-07-12 — bifactor REAL but PARTIAL; P1/P3 fail strict,
   informatively.** Per-item r_k = s_k − β_k·G, β_k on a disjoint calibration half. Removing G collapses
@@ -171,10 +174,19 @@ measured, not asserted.
   that reshapes the D1 story:** attempt-2a ran with the domain-adversarial term OFF (`max_lambda=0.0`,
   adversary inert, `domain_acc=1.0`) — so the transfer came from **joint-contrastive fine-tuning, not
   register-invariance**, and the earlier "valence transfers *because of* domain-adversarial training" claim
-  is corrected (B1 valence passed at lam=0 too). The genuine lam=1 adversarial run (**attempt 2b**) is in
-  flight to isolate the adversary's contribution. See `foundation_presence_findings.md` (rewritten) +
-  `foundation_presence_attempt2_result.json` + prereg D1/B5 + `d1_register_result.json` +
-  `d1_probe_result.json`. Still to do: (i) pc0↔eMFD-harm; (iii) extended-vector effective rank; (iv) 2b verdict.
+  is corrected (B1 valence passed at lam=0 too). **Attempt 2b DONE (2026-07-13): the lam=1 adversary is
+  STRICTLY WORSE — 1/5 pass vs 2a's 2/5.** It degraded every foundation (fairness→chance, loyalty lost its
+  pass); only purity survives. **PolarQuant shared-mode-removal cross-check: 0/5**, and `|PC1·domain_dir|`
+  = 0.97–1.00 shows why — the register axis IS the top PC, and identity is entangled *within* it, not
+  orthogonal to it. **Three methods (joint-contrastive, adversarial, geometric) agree:** for care/fairness/
+  legitimacy, foundation identity and register share one angular subspace → not separately transferable.
+  **Ship purity (robust to lam) + loyalty (lam=0 only) presence via lam=0 joint-contrastive; do NOT use the
+  adversary for presence.** Contrast the VALENCE channels (`lambda_comparison_result.json`): G +
+  loyalty-valence + purity-valence all pass at lam=0 AND lam=1 unchanged — valence is register-invariant,
+  identity is register-bound; that dissociation is the D1 headline. See `foundation_presence_findings.md`
+  (rewritten) + `foundation_presence_adv_result.json` + `lambda_comparison_result.json` +
+  `presence_polar_result.json` + `prereg_presence_polar.md` + prereg D1/B5 + `d1_register_result.json` +
+  `d1_probe_result.json`. Still to do: (i) pc0↔eMFD-harm; (iii) extended-vector effective rank.
 - **D2. Circumplex geometry test.** Schwartz's values (1992; 2012 refinement) organize on a validated
   circle — adjacency = compatibility, opposition = conflict. Test whether feeder correlation
   geometry reproduces opposition structure (candidate: autonomy vs legitimacy/authority). A

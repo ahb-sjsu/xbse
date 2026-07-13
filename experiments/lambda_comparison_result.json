@@ -1,0 +1,22 @@
+{
+  "experiment": "domain_adversarial_lambda_comparison",
+  "date": "2026-07-13",
+  "question": "Does the domain-adversarial term (max_lambda=1.0 vs the pre-registered 0.0) change which channels pass, and how? Isolates the adversary's contribution across VALENCE (A1 G, B1 loyalty/purity) and PRESENCE (2b) channels.",
+  "encoder": "BAAI/bge-m3",
+  "verdict": "DISSOCIATION: valence channels are register-INVARIANT (pass at lam=0 AND lam=1, ~unchanged); foundation-PRESENCE channels are register-BOUND (adversary degrades all five, costs loyalty its pass). The adversary strips identity along with register only where the two are entangled.",
+  "valence_channels": {
+    "general_valence_G_A1": {"lam0_auroc_mean": 0.856, "lam1_auroc_mean": 0.8501, "lam1_std": 0.0132, "lam1_margin_mean": 0.3307, "lam1_min_fuzz": 137.3, "lam0_pass": true, "lam1_pass": true, "effect": "unchanged", "n_seeds": 3},
+    "loyalty_B1":  {"lam0_auroc": 0.911, "lam1_auroc": 0.8924, "lam1_margin": 0.3874, "lam1_fuzz": 1867.1, "lam0_pass": true, "lam1_pass": true, "effect": "~unchanged (slightly lower, still huge margin)"},
+    "purity_B1":   {"lam0_auroc": 0.811, "lam1_auroc": 0.8014, "lam1_margin": 0.1458, "lam1_fuzz": 491.4, "lam1_bow_null": 0.6556, "lam0_pass": true, "lam1_pass": true, "effect": "~unchanged (purity's high disgust-lexicon BoW null 0.656 keeps the margin tighter)"}
+  },
+  "presence_channels_2b": {
+    "care":       {"lam0_auroc": 0.5742, "lam1_auroc": 0.5852, "effect": "neutral",  "lam0_pass": false, "lam1_pass": false},
+    "fairness":   {"lam0_auroc": 0.5687, "lam1_auroc": 0.4992, "effect": "STRIPPED to chance (fuzz collapsed 16.9->0.007)", "lam0_pass": false, "lam1_pass": false},
+    "legitimacy": {"lam0_auroc": 0.5850, "lam1_auroc": 0.5437, "effect": "hurt",     "lam0_pass": false, "lam1_pass": false},
+    "loyalty":    {"lam0_auroc": 0.6611, "lam1_auroc": 0.6411, "effect": "hurt — lost its pass (margin 0.104->0.084)", "lam0_pass": true, "lam1_pass": false},
+    "purity":     {"lam0_auroc": 0.7194, "lam1_auroc": 0.6990, "effect": "dinged but survives (margin 0.164)", "lam0_pass": true, "lam1_pass": true}
+  },
+  "presence_pass_count": {"lam0": 2, "lam1": 1},
+  "adversary_working_confirmed": "domain_acc driven from 1.0 toward chance (0.12) mid-training in 2b — the reversal is active; the degradation is the adversary removing register-diagnostic features, which for presence takes the identity signal with it.",
+  "conclusion_for_moralvector": "Ship valence channels as-is (robust to the adversary either way). Ship foundation-presence channels via the lam=0 joint-contrastive config only, and only purity (robust) + loyalty (lam=0 only). Do NOT use domain-adversarial training for presence channels."
+}

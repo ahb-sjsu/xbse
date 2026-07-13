@@ -1,0 +1,407 @@
+[
+  {
+    "foundation": "purity",
+    "k0_raw_auroc": 0.5347,
+    "lam0_finetuned_auroc": 0.7194,
+    "best_variant": "mean",
+    "best_auroc": 0.5608,
+    "best_margin_vs_raw_and_bow": 0.0261,
+    "best_gate_passed": false,
+    "lift_over_raw": 0.0261,
+    "pc_domain_alignment": [
+      0.968,
+      0.207,
+      0.021,
+      0.022
+    ],
+    "variants": [
+      {
+        "variant": "k0_raw",
+        "n_removed": 0,
+        "structure_auroc": 0.5347,
+        "bow_auroc": 0.5027,
+        "fuzz_ratio": 28.6102,
+        "margin_vs_raw_and_bow": -0.0,
+        "gate_passed": false
+      },
+      {
+        "variant": "mean",
+        "n_removed": 1,
+        "structure_auroc": 0.5608,
+        "bow_auroc": 0.5027,
+        "fuzz_ratio": 26.8529,
+        "margin_vs_raw_and_bow": 0.0261,
+        "gate_passed": false
+      },
+      {
+        "variant": "domain",
+        "n_removed": 1,
+        "structure_auroc": 0.5163,
+        "bow_auroc": 0.5027,
+        "fuzz_ratio": 25.1247,
+        "margin_vs_raw_and_bow": -0.0184,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1",
+        "n_removed": 1,
+        "structure_auroc": 0.5073,
+        "bow_auroc": 0.5027,
+        "fuzz_ratio": 25.2055,
+        "margin_vs_raw_and_bow": -0.0274,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1_2",
+        "n_removed": 2,
+        "structure_auroc": 0.5014,
+        "bow_auroc": 0.5027,
+        "fuzz_ratio": 24.3028,
+        "margin_vs_raw_and_bow": -0.0333,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1_3",
+        "n_removed": 3,
+        "structure_auroc": 0.5063,
+        "bow_auroc": 0.5027,
+        "fuzz_ratio": 23.6843,
+        "margin_vs_raw_and_bow": -0.0284,
+        "gate_passed": false
+      },
+      {
+        "variant": "domain+pc1_2",
+        "n_removed": 3,
+        "structure_auroc": 0.492,
+        "bow_auroc": 0.5027,
+        "fuzz_ratio": 23.8605,
+        "margin_vs_raw_and_bow": -0.0427,
+        "gate_passed": false
+      }
+    ]
+  },
+  {
+    "foundation": "loyalty",
+    "k0_raw_auroc": 0.5574,
+    "lam0_finetuned_auroc": 0.6611,
+    "best_variant": "mean",
+    "best_auroc": 0.5722,
+    "best_margin_vs_raw_and_bow": 0.0148,
+    "best_gate_passed": false,
+    "lift_over_raw": 0.0148,
+    "pc_domain_alignment": [
+      0.993,
+      0.044,
+      0.01,
+      0.032
+    ],
+    "variants": [
+      {
+        "variant": "k0_raw",
+        "n_removed": 0,
+        "structure_auroc": 0.5574,
+        "bow_auroc": 0.5214,
+        "fuzz_ratio": 30.246,
+        "margin_vs_raw_and_bow": 0.0,
+        "gate_passed": false
+      },
+      {
+        "variant": "mean",
+        "n_removed": 1,
+        "structure_auroc": 0.5722,
+        "bow_auroc": 0.5214,
+        "fuzz_ratio": 28.5127,
+        "margin_vs_raw_and_bow": 0.0148,
+        "gate_passed": false
+      },
+      {
+        "variant": "domain",
+        "n_removed": 1,
+        "structure_auroc": 0.5322,
+        "bow_auroc": 0.5214,
+        "fuzz_ratio": 25.6599,
+        "margin_vs_raw_and_bow": -0.0252,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1",
+        "n_removed": 1,
+        "structure_auroc": 0.5332,
+        "bow_auroc": 0.5214,
+        "fuzz_ratio": 25.6347,
+        "margin_vs_raw_and_bow": -0.0242,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1_2",
+        "n_removed": 2,
+        "structure_auroc": 0.5309,
+        "bow_auroc": 0.5214,
+        "fuzz_ratio": 24.5843,
+        "margin_vs_raw_and_bow": -0.0265,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1_3",
+        "n_removed": 3,
+        "structure_auroc": 0.5196,
+        "bow_auroc": 0.5214,
+        "fuzz_ratio": 23.7188,
+        "margin_vs_raw_and_bow": -0.0378,
+        "gate_passed": false
+      },
+      {
+        "variant": "domain+pc1_2",
+        "n_removed": 3,
+        "structure_auroc": 0.5288,
+        "bow_auroc": 0.5214,
+        "fuzz_ratio": 24.2831,
+        "margin_vs_raw_and_bow": -0.0286,
+        "gate_passed": false
+      }
+    ]
+  },
+  {
+    "foundation": "care",
+    "k0_raw_auroc": 0.5234,
+    "lam0_finetuned_auroc": 0.5742,
+    "best_variant": "k0_raw",
+    "best_auroc": 0.5234,
+    "best_margin_vs_raw_and_bow": -0.0,
+    "best_gate_passed": false,
+    "lift_over_raw": -0.0,
+    "pc_domain_alignment": [
+      0.988,
+      0.063,
+      0.038,
+      0.031
+    ],
+    "variants": [
+      {
+        "variant": "k0_raw",
+        "n_removed": 0,
+        "structure_auroc": 0.5234,
+        "bow_auroc": 0.4896,
+        "fuzz_ratio": 29.7886,
+        "margin_vs_raw_and_bow": -0.0,
+        "gate_passed": false
+      },
+      {
+        "variant": "mean",
+        "n_removed": 1,
+        "structure_auroc": 0.514,
+        "bow_auroc": 0.4896,
+        "fuzz_ratio": 28.2536,
+        "margin_vs_raw_and_bow": -0.0094,
+        "gate_passed": false
+      },
+      {
+        "variant": "domain",
+        "n_removed": 1,
+        "structure_auroc": 0.5012,
+        "bow_auroc": 0.4896,
+        "fuzz_ratio": 25.5824,
+        "margin_vs_raw_and_bow": -0.0222,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1",
+        "n_removed": 1,
+        "structure_auroc": 0.4964,
+        "bow_auroc": 0.4896,
+        "fuzz_ratio": 25.5322,
+        "margin_vs_raw_and_bow": -0.027,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1_2",
+        "n_removed": 2,
+        "structure_auroc": 0.4929,
+        "bow_auroc": 0.4896,
+        "fuzz_ratio": 24.636,
+        "margin_vs_raw_and_bow": -0.0305,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1_3",
+        "n_removed": 3,
+        "structure_auroc": 0.4912,
+        "bow_auroc": 0.4896,
+        "fuzz_ratio": 24.0238,
+        "margin_vs_raw_and_bow": -0.0322,
+        "gate_passed": false
+      },
+      {
+        "variant": "domain+pc1_2",
+        "n_removed": 3,
+        "structure_auroc": 0.4896,
+        "bow_auroc": 0.4896,
+        "fuzz_ratio": 24.1791,
+        "margin_vs_raw_and_bow": -0.0338,
+        "gate_passed": false
+      }
+    ]
+  },
+  {
+    "foundation": "fairness",
+    "k0_raw_auroc": 0.515,
+    "lam0_finetuned_auroc": 0.5687,
+    "best_variant": "domain+pc1_2",
+    "best_auroc": 0.5294,
+    "best_margin_vs_raw_and_bow": 0.0121,
+    "best_gate_passed": false,
+    "lift_over_raw": 0.0144,
+    "pc_domain_alignment": [
+      0.997,
+      0.06,
+      0.018,
+      0.0
+    ],
+    "variants": [
+      {
+        "variant": "k0_raw",
+        "n_removed": 0,
+        "structure_auroc": 0.515,
+        "bow_auroc": 0.5173,
+        "fuzz_ratio": 29.2863,
+        "margin_vs_raw_and_bow": -0.0023,
+        "gate_passed": false
+      },
+      {
+        "variant": "mean",
+        "n_removed": 1,
+        "structure_auroc": 0.51,
+        "bow_auroc": 0.5173,
+        "fuzz_ratio": 28.0558,
+        "margin_vs_raw_and_bow": -0.0073,
+        "gate_passed": false
+      },
+      {
+        "variant": "domain",
+        "n_removed": 1,
+        "structure_auroc": 0.5269,
+        "bow_auroc": 0.5173,
+        "fuzz_ratio": 24.1948,
+        "margin_vs_raw_and_bow": 0.0096,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1",
+        "n_removed": 1,
+        "structure_auroc": 0.5267,
+        "bow_auroc": 0.5173,
+        "fuzz_ratio": 24.2108,
+        "margin_vs_raw_and_bow": 0.0094,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1_2",
+        "n_removed": 2,
+        "structure_auroc": 0.5279,
+        "bow_auroc": 0.5173,
+        "fuzz_ratio": 23.4284,
+        "margin_vs_raw_and_bow": 0.0106,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1_3",
+        "n_removed": 3,
+        "structure_auroc": 0.5261,
+        "bow_auroc": 0.5173,
+        "fuzz_ratio": 22.8791,
+        "margin_vs_raw_and_bow": 0.0088,
+        "gate_passed": false
+      },
+      {
+        "variant": "domain+pc1_2",
+        "n_removed": 3,
+        "structure_auroc": 0.5294,
+        "bow_auroc": 0.5173,
+        "fuzz_ratio": 23.2087,
+        "margin_vs_raw_and_bow": 0.0121,
+        "gate_passed": false
+      }
+    ]
+  },
+  {
+    "foundation": "legitimacy",
+    "k0_raw_auroc": 0.4825,
+    "lam0_finetuned_auroc": 0.585,
+    "best_variant": "pc1_3",
+    "best_auroc": 0.5074,
+    "best_margin_vs_raw_and_bow": 0.0071,
+    "best_gate_passed": false,
+    "lift_over_raw": 0.0249,
+    "pc_domain_alignment": [
+      0.996,
+      0.04,
+      0.054,
+      0.015
+    ],
+    "variants": [
+      {
+        "variant": "k0_raw",
+        "n_removed": 0,
+        "structure_auroc": 0.4825,
+        "bow_auroc": 0.5003,
+        "fuzz_ratio": 30.9818,
+        "margin_vs_raw_and_bow": -0.0178,
+        "gate_passed": false
+      },
+      {
+        "variant": "mean",
+        "n_removed": 1,
+        "structure_auroc": 0.4863,
+        "bow_auroc": 0.5003,
+        "fuzz_ratio": 30.0473,
+        "margin_vs_raw_and_bow": -0.014,
+        "gate_passed": false
+      },
+      {
+        "variant": "domain",
+        "n_removed": 1,
+        "structure_auroc": 0.5011,
+        "bow_auroc": 0.5003,
+        "fuzz_ratio": 25.4785,
+        "margin_vs_raw_and_bow": 0.0008,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1",
+        "n_removed": 1,
+        "structure_auroc": 0.5017,
+        "bow_auroc": 0.5003,
+        "fuzz_ratio": 25.5094,
+        "margin_vs_raw_and_bow": 0.0014,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1_2",
+        "n_removed": 2,
+        "structure_auroc": 0.503,
+        "bow_auroc": 0.5003,
+        "fuzz_ratio": 24.6314,
+        "margin_vs_raw_and_bow": 0.0027,
+        "gate_passed": false
+      },
+      {
+        "variant": "pc1_3",
+        "n_removed": 3,
+        "structure_auroc": 0.5074,
+        "bow_auroc": 0.5003,
+        "fuzz_ratio": 23.9184,
+        "margin_vs_raw_and_bow": 0.0071,
+        "gate_passed": false
+      },
+      {
+        "variant": "domain+pc1_2",
+        "n_removed": 3,
+        "structure_auroc": 0.5017,
+        "bow_auroc": 0.5003,
+        "fuzz_ratio": 24.1051,
+        "margin_vs_raw_and_bow": 0.0014,
+        "gate_passed": false
+      }
+    ]
+  }
+]
