@@ -1,0 +1,13 @@
+# Pandoc/LaTeX build intermediates (regenerable by build_pdf.py / build_ieee.py)
+_build.md
+_build_ieee.md
+_dbg.tex
+*.aux
+*.log
+*.out
+# Backup + browser "save page as" dumps
+moral_spectrum_analyzer(orig).pdf
+*.htm
+*_files/
+files.zip
+__pycache__/

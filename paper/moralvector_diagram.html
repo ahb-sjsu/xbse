@@ -1,0 +1,379 @@
+<title>The MoralVector — structure & relationships</title>
+<style>
+  :root {
+    /* neutrals biased slightly toward the instrument's blue */
+    --paper:   #eef1f5;
+    --panel:   #ffffff;
+    --panel-2: #f6f8fb;
+    --ink:     #151a21;
+    --ink-2:   #3a434f;
+    --muted:   #697382;
+    --line:    #d3dae2;
+    --line-2:  #e4e9ef;
+    /* semantic accents — Okabe–Ito, matched to the paper's figures */
+    --blue:    #0072b2;   /* valence / shares the general factor G */
+    --verm:    #d55e00;   /* presence / separable subspace         */
+    --blue-ghost: rgba(0,114,178,.10);
+    --verm-ghost: rgba(213,94,0,.10);
+    --shadow:  0 1px 2px rgba(20,26,33,.05), 0 8px 30px rgba(20,26,33,.06);
+    --sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --mono: "Cascadia Code", "Consolas", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:   #0c0f13;
+      --panel:   #141922;
+      --panel-2: #10151c;
+      --ink:     #e9edf3;
+      --ink-2:   #b7c0cc;
+      --muted:   #8b95a4;
+      --line:    #263039;
+      --line-2:  #1c242d;
+      --blue:    #4aa6e0;
+      --verm:    #ef8046;
+      --blue-ghost: rgba(74,166,224,.14);
+      --verm-ghost: rgba(239,128,70,.14);
+      --shadow:  0 1px 2px rgba(0,0,0,.3), 0 10px 34px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#eef1f5; --panel:#ffffff; --panel-2:#f6f8fb; --ink:#151a21; --ink-2:#3a434f;
+    --muted:#697382; --line:#d3dae2; --line-2:#e4e9ef; --blue:#0072b2; --verm:#d55e00;
+    --blue-ghost:rgba(0,114,178,.10); --verm-ghost:rgba(213,94,0,.10);
+    --shadow:0 1px 2px rgba(20,26,33,.05), 0 8px 30px rgba(20,26,33,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper:#0c0f13; --panel:#141922; --panel-2:#10151c; --ink:#e9edf3; --ink-2:#b7c0cc;
+    --muted:#8b95a4; --line:#263039; --line-2:#1c242d; --blue:#4aa6e0; --verm:#ef8046;
+    --blue-ghost:rgba(74,166,224,.14); --verm-ghost:rgba(239,128,70,.14);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 34px rgba(0,0,0,.4);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans);
+         -webkit-font-smoothing: antialiased; line-height: 1.55; }
+  .page { max-width: 1000px; margin: 0 auto; padding: clamp(20px, 4vw, 56px) clamp(16px, 4vw, 40px) 72px; }
+
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+             color: var(--muted); display: flex; align-items: center; gap: 10px; }
+  .eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--verm); display: inline-block; }
+  h1 { font-size: clamp(30px, 5.2vw, 50px); line-height: 1.04; letter-spacing: -.02em; font-weight: 800;
+       margin: 16px 0 0; text-wrap: balance; }
+  h1 .dim { color: var(--muted); font-weight: 600; }
+  .lede { font-size: clamp(16px, 2vw, 19px); color: var(--ink-2); max-width: 65ch; margin: 18px 0 0; }
+  .lede code { font-family: var(--mono); font-size: .92em; background: var(--panel-2);
+               border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 5px; }
+
+  section { margin-top: clamp(38px, 6vw, 64px); }
+  .sec-label { font-family: var(--mono); font-size: 12.5px; letter-spacing: .12em; text-transform: uppercase;
+               color: var(--muted); margin: 0 0 14px; display: flex; align-items: baseline; gap: 12px; }
+  .sec-label .no { color: var(--verm); font-weight: 700; }
+  h2 { font-size: clamp(21px, 3vw, 27px); letter-spacing: -.01em; margin: 0 0 6px; font-weight: 750; }
+
+  .figwrap { background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+             box-shadow: var(--shadow); padding: 10px; overflow-x: auto; }
+  .figwrap svg { display: block; width: 100%; height: auto; min-width: 640px; }
+
+  /* SVG text classes (fills set via CSS vars so they track the theme) */
+  .t-key   { font-family: var(--mono); font-weight: 600; font-size: 15px; fill: var(--ink); }
+  .t-k     { font-family: var(--mono); font-size: 11px;  fill: var(--muted); letter-spacing: .04em; }
+  .t-beta  { font-family: var(--mono); font-size: 13px;  font-variant-numeric: tabular-nums; }
+  .t-axis  { font-family: var(--mono); font-size: 12.5px; fill: var(--ink-2); letter-spacing: .02em; }
+  .t-axis-sub { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+  .t-caption  { font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; fill: var(--muted); text-transform: uppercase; }
+  .cell-bg { fill: var(--panel-2); stroke: var(--line); }
+  .track   { fill: var(--line); }
+  .tick    { stroke: var(--line); stroke-width: 1.4; fill: none; }
+
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 18px; }
+  .lg { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: var(--panel);
+        display: flex; gap: 12px; align-items: flex-start; }
+  .lg .sw { width: 14px; height: 14px; border-radius: 4px; margin-top: 4px; flex: 0 0 auto; }
+  .lg h3 { margin: 0 0 3px; font-size: 14px; font-weight: 700; }
+  .lg h3 .b { font-family: var(--mono); font-weight: 600; font-size: 12.5px; color: var(--muted); }
+  .lg p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+
+  /* anatomy card */
+  .anat { display: grid; grid-template-columns: 1.1fr 1fr; gap: 22px; align-items: stretch; }
+  @media (max-width: 720px){ .anat { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+          padding: 20px 22px; }
+  .card .cardhead { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--ink);
+                    display: flex; justify-content: space-between; align-items: center; }
+  .card .pill { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+                border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; color: var(--muted); }
+  .row { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: center; margin-top: 16px; }
+  .row .lab { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+  .row .val { font-family: var(--mono); font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .bar { height: 12px; border-radius: 6px; background: var(--line); position: relative; overflow: hidden; }
+  .bar > i { position: absolute; top: 0; bottom: 0; display: block; border-radius: 6px; }
+  .diverge { position: relative; height: 14px; }
+  .diverge .mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+  .diverge .track2 { position: absolute; inset: 1px 0; border-radius: 7px; background: var(--line); }
+  .diverge .fill { position: absolute; top: 1px; bottom: 1px; border-radius: 7px; }
+  .provenance { margin-top: 18px; font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+                border-top: 1px dashed var(--line); padding-top: 14px; line-height: 1.7; }
+  .provenance b { color: var(--ink); font-weight: 600; }
+  .ok { color: var(--blue); font-weight: 700; }
+
+  .note { display: grid; grid-template-columns: 1fr; gap: 0; }
+  .keyrel { border-left: 3px solid var(--verm); background: var(--verm-ghost); border-radius: 0 12px 12px 0;
+            padding: 16px 20px; }
+  .keyrel p { margin: 0; font-size: 15px; color: var(--ink); max-width: 70ch; }
+  .keyrel p + p { margin-top: 10px; color: var(--ink-2); font-size: 14px; }
+  .keyrel .em { color: var(--verm); font-weight: 700; }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
+           font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex;
+           flex-wrap: wrap; gap: 6px 18px; justify-content: space-between; }
+</style>
+
+<div class="page">
+  <header>
+    <div class="eyebrow">Moral Spectrum Analyzer · output vector</div>
+    <h1>The MoralVector <span class="dim">— structure &amp; relationships</span></h1>
+    <p class="lede">A typed, versioned measurement vector. Nine canonical dimensions sit on a
+      <strong>frozen 3&times;3 ontology</strong> — <code>scope</code> &times; <code>mode</code> — and validated
+      <strong>extension channels</strong> ride outside the frozen nine. Each channel here is colored by an
+      <em>empirical</em> relationship the instrument measured: whether it shares the one general moral factor
+      <b>G</b>, or occupies a separable subspace of its own.</p>
+  </header>
+
+  <section>
+    <div class="sec-label"><span class="no">01</span> The channel ontology &amp; the shared-factor overlay</div>
+    <h2>Nine canonical dimensions on a scope&nbsp;&times;&nbsp;mode matrix</h2>
+    <div class="figwrap">
+      <svg id="matrix" viewBox="0 0 920 712" role="img"
+           aria-label="A 3-by-3 matrix of the nine canonical moral dimensions arranged by scope (Individual, Relational, Collective) against mode (What Matters, Who Decides, What We Know), each cell colored blue if it shares the general moral factor G (loading beta at least 0.80) or vermillion if separable, with the three extension channels shown in a band below."></svg>
+    </div>
+
+    <div class="legend">
+      <div class="lg">
+        <span class="sw" style="background:var(--blue)"></span>
+        <div><h3>Shares the general factor&nbsp;G <span class="b">β ≥ 0.80</span></h3>
+          <p>Valence transfers across register, but the dimension's <em>identity</em> collapses onto one shared
+             moral factor — it is not independently separable.</p></div>
+      </div>
+      <div class="lg">
+        <span class="sw" style="background:var(--verm)"></span>
+        <div><h3>Separable subspace <span class="b">β &lt; 0.80</span></h3>
+          <p>Carries variance the general factor does not — a distinct axis the vector measures on its own terms.</p></div>
+      </div>
+      <div class="lg">
+        <span class="sw" style="background:var(--line);border:1px solid var(--muted)"></span>
+        <div><h3>Pending — not gate-validated <span class="b">held out</span></h3>
+          <p><code style="font-family:var(--mono)">rights_respect</code> and
+             <code style="font-family:var(--mono)">societal_environmental</code> lack a validated second corpus, so
+             they are shown pending — never as confident channels, even where a loading exists.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label"><span class="no">02</span> Anatomy of one cell</div>
+    <h2>Every cell is a signed valence with measurement provenance</h2>
+    <div class="anat">
+      <div class="card">
+        <div class="cardhead"><span>virtue_care</span><span class="pill">k = 6 · Relational / What-Matters</span></div>
+
+        <div class="row">
+          <span class="lab">valence</span>
+          <div>
+            <div class="diverge">
+              <div class="track2"></div>
+              <div class="fill" id="valfill"></div>
+              <div class="mid"></div>
+            </div>
+          </div>
+        </div>
+        <div class="row"><span class="lab"></span><span class="val">sign = +0.80 &nbsp; <span style="color:var(--muted)">(−1 violated · 0 not-engaged · +1 upheld)</span></span></div>
+
+        <div class="row">
+          <span class="lab">presence</span>
+          <div class="bar"><i id="presfill" style="background:var(--verm)"></i></div>
+        </div>
+        <div class="row"><span class="lab"></span><span class="val">|magnitude| = 0.72 &nbsp; <span style="color:var(--muted)">(is the dimension engaged at all?)</span></span></div>
+
+        <div class="row">
+          <span class="lab">confidence</span>
+          <div class="bar"><i id="conffill" style="background:var(--blue)"></i></div>
+        </div>
+        <div class="row"><span class="lab"></span><span class="val">0.86</span></div>
+
+        <div class="provenance">
+          <b>validation provenance</b><br>
+          feeder <b>virtue_care-bse</b> · ckpt <b>001506fc…</b><br>
+          gate <span class="ok">PASS</span> — cross-dataset AUROC <b>0.811</b> ≥ max(null 0.469, BoW) + 0.10<br>
+          a consumer may refuse any checkpoint whose hash has no passing record.
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column;gap:14px;justify-content:center">
+        <h3 style="margin:0;font-size:16px;font-weight:750">Two projections, two different measurement properties</h3>
+        <p style="margin:0;font-size:14.5px;color:var(--ink-2)">The instrument reads each cell along two independent
+          projections, drawn in the paper's two accent colors:</p>
+        <div style="display:flex;gap:14px;align-items:flex-start">
+          <span class="sw" style="background:var(--blue);width:14px;height:14px;border-radius:4px;margin-top:4px;flex:0 0 auto"></span>
+          <p style="margin:0;font-size:14px;color:var(--ink-2)"><b style="color:var(--ink)">Valence</b> — the cell's sign.
+             <em>Register-invariant</em>: it transfers across corpora with or without adversarial de-confounding.</p>
+        </div>
+        <div style="display:flex;gap:14px;align-items:flex-start">
+          <span class="sw" style="background:var(--verm);width:14px;height:14px;border-radius:4px;margin-top:4px;flex:0 0 auto"></span>
+          <p style="margin:0;font-size:14px;color:var(--ink-2)"><b style="color:var(--ink)">Presence / identity</b> — the cell's
+             magnitude and which foundation is engaged. For several dimensions it is <em>register-bound</em> — it lives in the
+             same subspace as corpus/register and cannot be pried apart from it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="note">
+    <div class="sec-label"><span class="no">03</span> The headline relationship</div>
+    <div class="keyrel">
+      <p>Across three independent probes, moral <span class="em">valence</span> and moral
+         <span class="em">identity</span> dissociate: <strong>a dimension's valence transfers across register;
+         its identity, for several foundations, does not.</strong></p>
+      <p>That is why the matrix above is two-colored. The blue channels collapse onto a single general factor G —
+         you can read <em>whether</em> a norm is upheld, but not cleanly separate <em>which</em> foundation is engaged
+         from the register it was written in. Cross-dataset transfer, not in-domain accuracy, is the minimal evidence
+         that any of these channels measures a construct at all.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>MoralVector · DEME-9 frozen basis + extension channels</span>
+    <span>values verified against source artifacts · 2026-07-13</span>
+  </footer>
+</div>
+
+<script>
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const el = (n, a = {}) => { const e = document.createElementNS(SVGNS, n);
+    for (const k in a) e.setAttribute(k, a[k]); return e; };
+  const add = (p, n, a, cls) => { const e = el(n, a); if (cls) e.setAttribute("class", cls); p.appendChild(e); return e; };
+  const text = (p, x, y, s, cls, extra = {}) => {
+    const t = add(p, "text", Object.assign({ x, y }, extra), cls); t.textContent = s; return t; };
+
+  // ---- data: the nine canonical dimensions, placed by scope × mode, with the
+  //      measured general-factor loading β (bifactor A2). rights_respect was not
+  //      in that estimate (beta = null).
+  const SCOPES = ["Individual", "Relational", "Collective"];
+  const MODES  = [["What Matters", "values"], ["Who Decides", "deontic"], ["What We Know", "epistemic"]];
+  const DIMS = [
+    { k: 3, key: "autonomy_respect",        scope: "Individual", mode: "What Matters", beta: 0.022 },
+    { k: 1, key: "rights_respect",          scope: "Individual", mode: "Who Decides",  beta: null  },
+    { k: 4, key: "privacy_protection",      scope: "Individual", mode: "What We Know", beta: 0.251 },
+    { k: 6, key: "virtue_care",             scope: "Relational", mode: "What Matters", beta: 0.989 },
+    { k: 0, key: "physical_harm",           scope: "Relational", mode: "Who Decides",  beta: 0.347 },
+    { k: 8, key: "epistemic_quality",       scope: "Relational", mode: "What We Know", beta: 0.827 },
+    { k: 2, key: "fairness_equity",         scope: "Collective", mode: "What Matters", beta: 0.982 },
+    { k: 7, key: "legitimacy_trust",        scope: "Collective", mode: "Who Decides",  beta: 0.982 },
+    { k: 5, key: "societal_environmental",  scope: "Collective", mode: "What We Know", beta: -0.009 },
+  ];
+  const EXT = [
+    { key: "identity_attack", beta: 0.361, note: "discovered dimension (§5.6)" },
+    { key: "purity",          beta: 0.957, note: "MFT binding foundation" },
+    { key: "loyalty",         beta: 0.975, note: "MFT binding foundation" },
+  ];
+
+  // Dimensions without a validated second corpus are shown pending (gray), never
+  // as confident channels — even if a bifactor loading exists for them.
+  const PENDING = new Set(["rights_respect", "societal_environmental"]);
+  const isPending = d => d.beta === null || PENDING.has(d.key);
+  const regimeVar = (b, key) => (b === null || (key && PENDING.has(key)))
+    ? "--muted" : (b >= 0.80 ? "--blue" : "--verm");
+
+  // ---- layout constants
+  const PAD_L = 158, PAD_T = 104, CW = 236, CH = 150, GAP = 14;
+  const gridW = 3 * CW + 2 * GAP;
+  const svg = document.getElementById("matrix");
+
+  // axis captions
+  const topCap = text(svg, PAD_L, 30, "MODE  →  how the concern is engaged", "t-caption");
+  const leftCap = text(svg, 20, PAD_T + 3 * CH + 2 * GAP, "SCOPE ↑ whose interests are at stake", "t-caption");
+  leftCap.setAttribute("transform", `rotate(-90 20 ${PAD_T + 3 * CH + 2 * GAP})`);
+
+  // column headers (mode)
+  MODES.forEach(([m, sub], c) => {
+    const cx = PAD_L + c * (CW + GAP) + CW / 2;
+    text(svg, cx, 66, m, "t-axis", { "text-anchor": "middle" });
+    text(svg, cx, 84, sub, "t-axis-sub", { "text-anchor": "middle" });
+  });
+  // row headers (scope)
+  SCOPES.forEach((s, r) => {
+    const cy = PAD_T + r * (CH + GAP) + CH / 2;
+    text(svg, PAD_L - 16, cy, s, "t-axis", { "text-anchor": "end", "dominant-baseline": "middle" });
+  });
+
+  // registration ticks around the grid bounding box (instrument detail)
+  const gx0 = PAD_L, gy0 = PAD_T, gx1 = PAD_L + gridW, gy1 = PAD_T + 3 * CH + 2 * GAP, T = 10;
+  [[gx0, gy0, 1, 1], [gx1, gy0, -1, 1], [gx0, gy1, 1, -1], [gx1, gy1, -1, -1]].forEach(([x, y, sx, sy]) => {
+    add(svg, "path", { d: `M ${x} ${y + sy * T} L ${x} ${y} L ${x + sx * T} ${y}` }, "tick");
+  });
+
+  // cells
+  const cellOf = (scope, mode) => DIMS.find(d => d.scope === scope && d.mode === mode);
+  SCOPES.forEach((scope, r) => MODES.forEach(([mode], c) => {
+    const d = cellOf(scope, mode);
+    const x = PAD_L + c * (CW + GAP), y = PAD_T + r * (CH + GAP);
+    const rv = regimeVar(d.beta, d.key);
+    const pend = isPending(d);
+
+    add(svg, "rect", { x, y, width: CW, height: CH, rx: 11 }, "cell-bg");
+    // top regime stripe
+    const stripe = add(svg, "rect", { x, y, width: CW, height: 5, rx: 2.5 });
+    stripe.style.fill = `var(${rv})`;
+    // faint regime wash (none for pending/unvalidated cells)
+    const wash = add(svg, "rect", { x, y: y + 5, width: CW, height: CH - 5, rx: 11 });
+    wash.style.fill = pend ? "transparent" : (d.beta >= 0.8 ? "var(--blue-ghost)" : "var(--verm-ghost)");
+
+    text(svg, x + 16, y + 28, "k" + d.k, "t-k");
+    text(svg, x + CW / 2, y + 70, d.key, "t-key", { "text-anchor": "middle" });
+
+    // β read-out with a mini bar
+    const bx = x + 16, bw = CW - 32, by = y + CH - 30;
+    add(svg, "rect", { x: bx, y: by, width: bw, height: 7, rx: 3.5 }, "track");
+    if (!pend) {
+      const w = Math.max(0, Math.min(1, d.beta)) * bw;
+      const f = add(svg, "rect", { x: bx, y: by, width: w, height: 7, rx: 3.5 });
+      f.style.fill = `var(${rv})`;
+    }
+    const lbl = text(svg, x + 16, y + CH - 12, d.beta === null ? "β  n/a" : "β " + d.beta.toFixed(2), "t-beta");
+    lbl.style.fill = `var(${rv})`;
+    const tag = text(svg, x + CW - 16, y + CH - 12,
+      pend ? "pending" : (d.beta >= 0.8 ? "shares G" : "separable"), "t-beta",
+      { "text-anchor": "end" });
+    tag.style.fill = "var(--muted)";
+  }));
+
+  // ---- extension-channel band
+  const bandY = gy1 + 34;
+  text(svg, PAD_L, bandY - 6, "EXTENSION CHANNELS — ride outside the frozen nine (metadata, not the k-axis)", "t-caption");
+  const frame = add(svg, "rect", { x: PAD_L, y: bandY, width: gridW, height: 82, rx: 12,
+    fill: "transparent", stroke: "var(--line)", "stroke-dasharray": "5 5" });
+  const chipW = (gridW - 2 * GAP) / 3;
+  EXT.forEach((e, i) => {
+    const x = PAD_L + i * (chipW + GAP), y = bandY + 12, w = chipW - 0, h = 58;
+    const rv = regimeVar(e.beta);
+    add(svg, "rect", { x: x + 8, y, width: w - 16, height: h, rx: 10 }, "cell-bg");
+    const stripe = add(svg, "rect", { x: x + 8, y, width: 4, height: h, rx: 2 });
+    stripe.style.fill = `var(${rv})`;
+    text(svg, x + 22, y + 24, e.key, "t-key", {});
+    text(svg, x + 22, y + 44, e.note, "t-axis-sub", {});
+    const bl = text(svg, x + w - 24, y + 24, "β " + e.beta.toFixed(2), "t-beta", { "text-anchor": "end" });
+    bl.style.fill = `var(${rv})`;
+    const tg = text(svg, x + w - 24, y + 44, e.beta >= 0.8 ? "shares G" : "separable", "t-beta", { "text-anchor": "end" });
+    tg.style.fill = "var(--muted)";
+  });
+
+  // ---- anatomy card bars (valence diverges from center; presence/confidence fill from left)
+  const setDiverge = (id, v) => { // v in [-1,1]
+    const node = document.getElementById(id);
+    const pct = Math.abs(v) * 50;
+    if (v >= 0) { node.style.left = "50%"; node.style.width = pct + "%"; node.style.background = "var(--blue)"; }
+    else { node.style.right = "50%"; node.style.left = "auto"; node.style.width = pct + "%"; node.style.background = "var(--verm)"; }
+  };
+  setDiverge("valfill", 0.80);
+  document.getElementById("presfill").style.width = (0.72 * 100) + "%";
+  document.getElementById("conffill").style.width = (0.86 * 100) + "%";
+</script>
