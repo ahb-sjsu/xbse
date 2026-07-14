@@ -1,10 +1,11 @@
 name: Publish to PyPI
 
-# Publishes on a GitHub Release (or manual dispatch) via PyPI Trusted Publishing
-# (OIDC) — no API token stored. One-time PyPI setup required (see README / below):
-#   pypi.org → project "xbse" → Publishing → add a GitHub publisher:
-#     owner=ahb-sjsu, repo=xbse, workflow=publish.yml, environment=pypi
+# Publishes to PyPI on a version tag (or GitHub Release / manual dispatch) using the
+# account-level API token stored as the `PYPI_API_TOKEN` repo secret.
+# Release: git tag vX.Y.Z && git push --tags   (tag version must match pyproject `version`).
 on:
+  push:
+    tags: ["v*"]
   release:
     types: [published]
   workflow_dispatch:
@@ -31,11 +32,6 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/xbse
-    permissions:
-      id-token: write   # OIDC token for PyPI Trusted Publishing
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -43,3 +39,6 @@ jobs:
           path: dist/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
