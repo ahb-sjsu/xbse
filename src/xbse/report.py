@@ -32,6 +32,10 @@ class Report:
     bar_derivation: str = ""  # how the bar was computed, copied from the instance's Bar
     bar_registered: str = ""  # ISO date the bar was pre-registered
     extra: dict = field(default_factory=dict)
+    # The calibration block from xbse.calibration.calibration_fields (split-honest ECE +
+    # reliability_weight). First-class so consumers loading Report(**json) accept the wired
+    # production reports; empty on pre-calibration reports.
+    calibration: dict = field(default_factory=dict)
 
     def to_json(self, path: str | None = None) -> str:
         s = json.dumps(asdict(self), indent=2, sort_keys=True)

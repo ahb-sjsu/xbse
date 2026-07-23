@@ -82,3 +82,27 @@ def test_both_methods_selectable(method):
     scores, labels = _separable()
     block = calibration_fields(scores, labels, auroc=0.8, method=method)
     assert block["calibration_method"] == method
+
+
+def test_report_roundtrips_calibration_block():
+    """Production reports now carry the wired calibration block; Report(**json) must accept it
+    (both erisml-compiler and moral-spectrum-analyzer load reports exactly that way), and
+    pre-calibration reports without the key must still load."""
+    import json
+
+    from xbse.report import Report
+
+    block = {"calibration_method": "isotonic", "calibration_ece": 0.05, "reliability_weight": 0.7}
+    r = Report(
+        instance="care_joint",
+        checkpoint_hash="deadbeef",
+        thresholds={},
+        metrics={},
+        passed=True,
+        calibration=block,
+    )
+    r2 = Report(**json.loads(r.to_json()))
+    assert r2.calibration == block
+    legacy = json.loads(r.to_json())
+    del legacy["calibration"]
+    assert Report(**legacy).calibration == {}
