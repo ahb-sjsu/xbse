@@ -151,13 +151,27 @@ moral structure. The 8 rehabilitated dimensions beat BoW by +0.16 to +0.33; righ
 BoW) is flagged as the honest failure. `bow_auroc` and `lexical_margin` are standing gate metrics.
 
 **Eight of nine dimensions rehabilitated from artifact to real (0.62–0.85).** `rights_respect`
-(0.475, below baseline) is the honest exception: a *corpus-choice* failure, not a method failure —
-ECHR European case-facts and everyday ETHICS-justice scenarios share no transferable structure. The
-fix is a better second corpus (US civil-rights via CourtListener), not a different method. Lessons
+(0.475, below baseline) is the honest exception: **hypothesized** corpus-choice failure — ECHR
+European case-facts and everyday ETHICS-justice scenarios share no transferable structure —
+discriminating experiment: US civil-rights corpus (CourtListener), status ⚪. If that run fails,
+the method-failure branch reopens and this README will say so. Lessons
 banked: (i) **within-dataset AUROC is not evidence of a real dimension** — always cross-test;
 (ii) the load-bearing fix is **cross-corpus same-sign positives**, not the adversary (which only
 de-confounds when the two corpora are surface-similar); (iii) `physical_harm` (0.622) is weakest —
 the widest genre gap (QA-pairs vs scenarios). Full roadmap: `experiments/data_sourcing_plan.md`.
+
+> **Specificity label (bifactor readout, `docs/BIFACTOR_READOUT.md`).** This scorecard measures
+> validated *transfer*, not validated *specificity*: the published bifactor run shows a strong
+> general-valence channel G (itself gate-passing at 0.856) predicts several named axes at ≥ 0.98 on
+> independent corpora (care, fairness, legitimacy; epistemic 0.94), while privacy, autonomy, and
+> environmental are genuinely specific. Per the pre-registered demotion rule, a standing
+> **specificity gate** (`xbse.specificity`, registered margin 0.05) now requires each feeder to beat
+> every sibling on its own held-out pairs; the full 9×9 discrimination matrix on the production
+> checkpoints is ⚪ until run. **Third-corpus OOD columns** (never-touched corpus per dimension,
+> top-3 first) are likewise committed ⚪ per `experiments/data_sourcing_plan.md` — a bar may be
+> tightened, never loosened. Per-feeder **calibration** (`xbse.calibration`: ECE, reliability
+> curves, and the registered reliability weight `max(0, 2·AUROC − 1)`) ships in every future
+> `Report`; consumers weight decision confidence by it.
 
 **Pass/fail is against a per-dimension, pre-registered `Bar`** (`xbse.bar`), *not* a universal 0.97.
 A feeder is **VALIDATED iff its cross-dataset AUROC beats BOTH nulls — the untrained-encoder
