@@ -131,17 +131,17 @@ flowchart TB
 Cross-dataset held-out AUROC (evaluate on a *second* corpus). `BoW` is a TF-IDF bag-of-words model
 on the **same** held-out pairs — the adversarial lexical control. `margin = encoder − BoW`:
 
-| dimension | corpora (2 independent) | baseline | **cross-dataset** | BoW (lexical) | margin |
-|---|---|---:|---:|---:|---:|
-| privacy_protection | privacy RoTs + AITA scenarios | 0.55 | **0.853** | 0.54 | **+0.31** |
-| epistemic_quality | Social-Chem honesty + ETHICS | 0.48 | **0.817** | 0.53 | **+0.29** |
-| societal_environmental | ClimateBERT + dual-judged env-claims | 0.43 | **0.817** | 0.48 | **+0.33** |
-| virtue_care | Social-Chem care-harm + ETHICS | 0.47 | **0.811** | 0.53 | **+0.28** |
-| fairness_equity | Social-Chem fairness + ETHICS | 0.47 | **0.789** | 0.51 | **+0.28** |
-| autonomy_respect | ec-darkpattern + MentalManip | 0.52 | **0.747** | 0.53 | **+0.22** |
-| legitimacy_trust | Social-Chem authority + ETHICS | 0.52 | **0.708** | 0.53 | **+0.18** |
-| physical_harm | BeaverTails + ETHICS-harm | 0.50 | **0.622** | 0.46 | **+0.16** |
-| rights_respect | ECHR + ETHICS-justice | 0.52 | **0.475** ✗ | 0.49 | **−0.01** |
+| dimension | corpora (2 independent) | baseline | **cross-dataset** | BoW (lexical) | margin | specificity (gate) |
+|---|---|---:|---:|---:|---:|---|
+| privacy_protection | privacy RoTs + AITA scenarios | 0.55 | **0.853** | 0.54 | **+0.31** | **own-axis** (+.28) |
+| epistemic_quality | Social-Chem honesty + ETHICS | 0.48 | **0.817** | 0.53 | **+0.29** | DEMOTE-to-G (−.07) |
+| societal_environmental | ClimateBERT + dual-judged env-claims | 0.43 | **0.817** | 0.48 | **+0.33** | **own-axis** (+.31) |
+| virtue_care | Social-Chem care-harm + ETHICS | 0.47 | **0.811** | 0.53 | **+0.28** | DEMOTE-to-G (−.04) |
+| fairness_equity | Social-Chem fairness + ETHICS | 0.47 | **0.789** | 0.51 | **+0.28** | DEMOTE-to-G (−.02) |
+| autonomy_respect | ec-darkpattern + MentalManip | 0.52 | **0.747** | 0.53 | **+0.22** | **own-axis** (+.17) |
+| legitimacy_trust | Social-Chem authority + ETHICS | 0.52 | **0.708** | 0.53 | **+0.18** | DEMOTE-to-G (−.05) |
+| physical_harm | BeaverTails + ETHICS-harm | 0.50 | **0.622** | 0.46 | **+0.16** | **own-axis** (+.08) |
+| rights_respect | ECHR + ETHICS-justice | 0.52 | **0.475** ✗ | 0.49 | **−0.01** | ⚪ (no validated feeder) |
 
 **The adversarial control holds:** bag-of-words is near-random (0.46–0.54) on every dimension, so
 the encoder's signal is provably **non-lexical** — it is not learning valence-correlated vocabulary.
@@ -166,8 +166,15 @@ the widest genre gap (QA-pairs vs scenarios). Full roadmap: `experiments/data_so
 > independent corpora (care, fairness, legitimacy; epistemic 0.94), while privacy, autonomy, and
 > environmental are genuinely specific. Per the pre-registered demotion rule, a standing
 > **specificity gate** (`xbse.specificity`, registered margin 0.05) now requires each feeder to beat
-> every sibling on its own held-out pairs; the full 9×9 discrimination matrix on the production
-> checkpoints is ⚪ until run. **Third-corpus OOD columns** (never-touched corpus per dimension,
+> every sibling on its own held-out pairs; the full 12×12 discrimination matrix (11 named axes + G)
+> **has now been run** (`experiments/specificity_matrix.json`, verdicts in
+> `experiments/specificity_verdicts.json`; Atlas, BGE-M3, held-out pairs, gate metric): **5 axes
+> are own-axis** (privacy +.28, environmental +.31, identity_attack +.25, autonomy +.17,
+> physical_harm +.08) and **6 DEMOTE to G** (care −.04, fairness −.02, legitimacy −.05,
+> epistemic −.07, loyalty −.02, purity −.12 — G beats purity on purity's own pairs by 12 points).
+> The G row is bimodal: 0.85–0.94 on demoted axes' pairs, chance (0.43–0.51) on specific ones —
+> gate-level confirmation of the A2 residualization through independent math (one divergence:
+> identity_attack, gate-specific but A2-mixed; the gate is the registered criterion). **Third-corpus OOD columns** (never-touched corpus per dimension,
 > top-3 first) are likewise committed ⚪ per `experiments/data_sourcing_plan.md` — a bar may be
 > tightened, never loosened. Per-feeder **calibration** (`xbse.calibration`: ECE, reliability
 > curves, and the registered reliability weight `max(0, 2·AUROC − 1)`) ships in every future

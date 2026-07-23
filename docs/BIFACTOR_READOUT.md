@@ -76,3 +76,23 @@ Consequences, adopted:
    G, never as a hollow axis.
 
 *One measurement in nine coats is a finding, not a failure — labeled.*
+
+## Addendum (2026-07-23): gate-level confirmation — the 12×12 matrix
+
+The standing specificity gate has now been run on the production
+checkpoints (`experiments/specificity_matrix.json`): all 11 named axes
+plus the validated G channel as a rival, scored on every axis's held-out
+pairs with the same gate metric as validation. Result, registered margin
+0.05: **own-axis** — privacy (+.277), environmental (+.310),
+identity_attack (+.246), autonomy (+.171), physical_harm (+.082);
+**DEMOTE-to-G** — purity (−.124, G beats it on its own pairs), epistemic
+(−.065), legitimacy (−.049), care (−.038), loyalty (−.024), fairness
+(−.018). The G row is bimodal — 0.85–0.94 on the demoted axes' own
+pairs, chance (0.43–0.51) on the specific ones — confirming the A2
+residualization through independent math. One divergence between the two
+methods: identity_attack (gate: decisively specific; A2 residual: mixed).
+The gate is the registered criterion; the divergence is recorded, not
+adjudicated away. Sibling interchangeability inside the G family is
+total: care's feeder outscores epistemic's own feeder on epistemic's
+pairs (0.875 vs 0.811) and nearly matches loyalty's on loyalty's (0.935
+vs 0.911).

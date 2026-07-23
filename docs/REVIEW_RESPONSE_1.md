@@ -7,7 +7,7 @@ not yet run.
 
 ## Dispositions
 
-### R1 (F2, specificity gate + 9×9 matrix) — 🔵 machinery shipped; matrix run ⚪
+### R1 (F2, specificity gate + 9×9 matrix) — ✅ CLOSED (matrix run 2026-07-23)
 
 **Accepted in full — and the review's suspicion was already confirmed by
 data the reviewer asked for in §3.** The bifactor A2 run (now published,
@@ -20,10 +20,19 @@ with the **registered `specificity_margin = 0.05`** (half the validation
 margin; competitor is a trained sibling, not a null; may be tightened,
 never loosened — enforced in code and by test). Failing feeders are
 DEMOTED to G per the bifactor prereg's rule, never displayed as hollow
-axes. The full 9×9 matrix on the production feeders requires the trained
-checkpoints (Atlas) — column ⚪ until run; the A2 residual transfer matrix
-stands as the interim evidence and is published. **Closes when** the
-matrix lands in the scorecard; the gate code and its law are in force now.
+axes. **The matrix has been run** (12×12: 11 named axes + the validated G
+channel as a rival; Atlas GPU, BGE-M3 checkpoints, held-out pairs, the
+same gate metric as every validation). Verdicts under the registered
+margin: **5 own-axis** (privacy, environmental, identity_attack,
+autonomy, physical_harm) and **6 DEMOTE-to-G** (care, fairness,
+legitimacy, epistemic, loyalty, purity) — G beats purity on purity's own
+pairs by 0.124 and beats care/fairness on theirs outright. Gate-level
+confirmation of the A2 residualization by independent computation, with
+one honestly-reported divergence (identity_attack: gate +0.246 specific;
+A2 residual mixed — the gate is the registered criterion). Matrix and
+verdicts: `experiments/specificity_matrix.json`,
+`experiments/specificity_verdicts.json`; scorecard column live in the
+README. **Closed.**
 
 ### R2 (F1, calibration into Report + DEME weighting) — 🔵 shipped xbse-side; erisml consumption ⚪
 
