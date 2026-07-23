@@ -1,0 +1,25 @@
+{
+  "bar_derivation": "VALIDATED iff cross-dataset held-out AUROC beats BOTH the untrained-encoder null (0.513) and the TF-IDF bag-of-words null by >=0.10 on the same held-out pairs. R6 discriminating run: complete registered corpus incl. rights_cl_plus ('+' holdings) absent from the Jul-10 attempt.",
+  "bar_registered": "2026-07-23",
+  "bar_source": "baseline-relative(margin 0.10) over untrained null 0.513 + BoW null",
+  "calibration": {},
+  "checkpoint_hash": "b235d77fdbe4e4f4",
+  "extra": {},
+  "instance": "rights_force_joint",
+  "metrics": {
+    "domain_acc": 1.0,
+    "domain_chance": 0.5,
+    "fuzz_ratio": 0.002331722148696258,
+    "severity_auroc": 0.532,
+    "structure_auroc": 0.4667714803235275,
+    "surface_invariance": 1.0
+  },
+  "passed": false,
+  "thresholds": {
+    "auroc>": 0.613,
+    "baseline_null": 0.513,
+    "fuzz>": 1.0,
+    "margin>=": 0.1,
+    "policy": "baseline_relative"
+  }
+}

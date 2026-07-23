@@ -141,7 +141,7 @@ on the **same** held-out pairs — the adversarial lexical control. `margin = en
 | autonomy_respect | ec-darkpattern + MentalManip | 0.52 | **0.747** | 0.53 | **+0.22** | **own-axis** (+.17) |
 | legitimacy_trust | Social-Chem authority + ETHICS | 0.52 | **0.708** | 0.53 | **+0.18** | DEMOTE-to-G (−.05) |
 | physical_harm | BeaverTails + ETHICS-harm | 0.50 | **0.622** | 0.46 | **+0.16** | **own-axis** (+.08) |
-| rights_respect | ECHR + ETHICS-justice | 0.52 | **0.475** ✗ | 0.49 | **−0.01** | ⚪ (no validated feeder) |
+| rights_respect | ECHR + CourtListener (R6 rerun) | 0.51 | **0.509** ✗ | 0.48 | **−0.00** | ✗ (method-failure branch open) |
 
 **The adversarial control holds:** bag-of-words is near-random (0.46–0.54) on every dimension, so
 the encoder's signal is provably **non-lexical** — it is not learning valence-correlated vocabulary.
@@ -150,11 +150,21 @@ from corpus B, which share little surface, so BoW is helpless while the encoder 
 moral structure. The 8 rehabilitated dimensions beat BoW by +0.16 to +0.33; rights (−0.01, *below*
 BoW) is flagged as the honest failure. `bow_auroc` and `lexical_margin` are standing gate metrics.
 
-**Eight of nine dimensions rehabilitated from artifact to real (0.62–0.85).** `rights_respect`
-(0.475, below baseline) is the honest exception: **hypothesized** corpus-choice failure — ECHR
-European case-facts and everyday ETHICS-justice scenarios share no transferable structure —
-discriminating experiment: US civil-rights corpus (CourtListener), status ⚪. If that run fails,
-the method-failure branch reopens and this README will say so. Lessons
+**Eight of nine dimensions rehabilitated from artifact to real (0.62–0.85).** `rights_respect` is
+the honest exception, and as promised, this README now says so: **the discriminating CourtListener
+run landed 2026-07-23 and FAILED — the corpus-choice hypothesis is refuted and the method-failure
+branch is open.** The registered experiment paired same-genre court case-facts across
+jurisdictions (ECHR ↔ US civil-rights §1983/NOS-440s, both signs both domains — including the
+mined rights-RESPECTED holdings the aborted Jul-10 attempt lacked): trained 0.509 vs untrained
+null 0.512 (margin −0.003, zero learned structure). The stratified physical-integrity variant
+(ECHR Art 2–3 ↔ US excessive-force — the *most* coherent right-type pairing available) did worse:
+0.467, below its own untrained baseline. Artifacts: `experiments/rights_r6_summary.json`, the two
+FAIL reports alongside it, `.pre_r6.bak` originals on the training host. With corpus choice
+eliminated, the live explanations are method-level: statement-level valence contrast may not
+capture "a right was violated" (a *verdict about a process*, not a valence of a description), or
+rights talk may be inherently G-plus-specifics under this objective. `rights_respect` remains a
+hand-specified hard channel in every consumer; any rehabilitation attempt needs a *new registered
+method*, not another corpus. Lessons
 banked: (i) **within-dataset AUROC is not evidence of a real dimension** — always cross-test;
 (ii) the load-bearing fix is **cross-corpus same-sign positives**, not the adversary (which only
 de-confounds when the two corpora are surface-similar); (iii) `physical_harm` (0.622) is weakest —

@@ -1,0 +1,52 @@
+[
+ {
+  "dim": "rights_joint",
+  "trained_auroc": 0.5091,
+  "untrained_null": 0.5123,
+  "bow_null": 0.4828,
+  "margin_vs_max_null": -0.0032,
+  "fuzz_ratio": 25.8151,
+  "gate_passed": false,
+  "n_rows": 11865,
+  "by_domain": {
+   "0": 9992,
+   "1": 1873
+  },
+  "by_domain_sign": {
+   "0|-": 8904,
+   "0|+": 1088,
+   "1|-": 1205,
+   "1|+": 668
+  },
+  "checkpoint": "/home/claude/xbse_ckpt/rights_joint.pt",
+  "jul10_attempt": {
+   "structure_auroc": 0.4683,
+   "trained_without_plus_corpus": true
+  }
+ },
+ {
+  "dim": "rights_force_joint",
+  "trained_auroc": 0.4668,
+  "untrained_null": 0.5131,
+  "bow_null": 0.4755,
+  "margin_vs_max_null": -0.0463,
+  "fuzz_ratio": 0.0023,
+  "gate_passed": false,
+  "n_rows": 3330,
+  "by_domain": {
+   "0": 2961,
+   "1": 369
+  },
+  "by_domain_sign": {
+   "0|+": 1088,
+   "0|-": 1873,
+   "1|-": 268,
+   "1|+": 101
+  },
+  "checkpoint": "/home/claude/xbse_ckpt/rights_force_joint.pt",
+  "jul10_attempt": {
+   "structure_auroc": 0.5057,
+   "trained_without_plus_corpus": true
+  }
+ }
+]

@@ -89,11 +89,23 @@ written in the review (on record 2026-07-23). Requires Atlas GPU time and
 the STRATA Phase-1 instruments; scheduled behind the specificity matrix
 run.
 
-### R6 (rights_respect phrasing) — ✅ fixed
+### R6 (rights_respect phrasing) — ✅ CLOSED (run landed 2026-07-23; hypothesis REFUTED)
 
-README now reads: "hypothesized corpus-choice failure; discriminating
-experiment: US civil-rights corpus (CourtListener), status ⚪." The
-method-failure branch reopens if the run fails, and the README will say so.
+The discriminating CourtListener run has landed, and it landed against
+us: with the complete registered corpus (same-genre court case-facts,
+ECHR ↔ US civil-rights, both signs both domains — the Jul-10 attempt,
+we discovered, had been trained 8 minutes before the '+'-class mining
+finished and so never saw a rights-RESPECTED US example), the aggregate
+joint trained to 0.509 vs untrained null 0.512, and the stratified
+physical-integrity variant (ECHR Art 2–3 ↔ US excessive-force, the most
+coherent right-type pairing available) to 0.467, *below* its untrained
+baseline. **The corpus-choice hypothesis is refuted; the method-failure
+branch is open, and the README says so** — exactly as the approved
+phrasing promised, whichever way it landed. Artifacts:
+`experiments/rights_r6_summary.json` + both FAIL reports.
+`rights_respect` remains a hand-specified hard channel in every
+consumer; rehabilitation requires a new registered method, not another
+corpus.
 
 ### R7 (Trusted-Publishing backport to turboquant-pro) — ⚪ queued
 
