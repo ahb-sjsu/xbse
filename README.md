@@ -176,9 +176,11 @@ the widest genre gap (QA-pairs vs scenarios). Full roadmap: `experiments/data_so
 > gate-level confirmation of the A2 residualization through independent math (one divergence:
 > identity_attack, gate-specific but A2-mixed; the gate is the registered criterion). **Third-corpus OOD columns** (never-touched corpus per dimension,
 > top-3 first) are likewise committed ⚪ per `experiments/data_sourcing_plan.md` — a bar may be
-> tightened, never loosened. Per-feeder **calibration** (`xbse.calibration`: ECE, reliability
-> curves, and the registered reliability weight `max(0, 2·AUROC − 1)`) ships in every future
-> `Report`; consumers weight decision confidence by it.
+> tightened, never loosened. Per-feeder **calibration** (`xbse.calibration`: split-honest ECE,
+> reliability curves, and the registered reliability weight `max(0, 2·AUROC − 1)`) is now wired
+> into **all 12 production reports** (`experiments/calibration_summary.json`; held-out ECE
+> 0.018–0.101 vs raw up to 0.223); consumers weight decision confidence by it — physharm enters
+> at 0.26, loyalty at 0.82.
 
 **Pass/fail is against a per-dimension, pre-registered `Bar`** (`xbse.bar`), *not* a universal 0.97.
 A feeder is **VALIDATED iff its cross-dataset AUROC beats BOTH nulls — the untrained-encoder

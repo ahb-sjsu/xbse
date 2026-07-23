@@ -34,18 +34,30 @@ verdicts: `experiments/specificity_matrix.json`,
 `experiments/specificity_verdicts.json`; scorecard column live in the
 README. **Closed.**
 
-### R2 (F1, calibration into Report + DEME weighting) — 🔵 shipped xbse-side; erisml consumption ⚪
+### R2 (F1, calibration into Report + DEME weighting) — ✅ xbse-side WIRED (2026-07-23); erisml consumption ⚪
 
 **Accepted.** Shipped: `xbse.calibration` — Platt and isotonic maps fit on
 held-out pairs only, `calibration_ece` + `raw_ece` + `reliability_curve`,
 and the registered floor convention `reliability_weight = max(0, 2·AUROC − 1)`
 (a 0.62 feeder enters at weight 0.24, a 0.85 feeder at 0.71; a consumer
 may use the full calibrated posterior, never less). `calibration_fields()`
-returns the exact Report block. **Remaining ⚪:** wiring the block through
-the production validation runs (checkpoints on Atlas) and `erisml`'s
-consumption of `reliability_weight` in `MoralVector` per-dimension
-uncertainty — tracked as the cross-repo item; an unweighted consumer is
-hereby a documented, deliberate exception until then.
+returns the exact Report block. **The wiring has been run** on all 12
+production reports (11 named axes + G; Atlas, isotonic on the held-out
+pairs, `.pre_calibration.bak` backups kept;
+`experiments/calibration_summary.json`). Honesty note that survived its
+own first draft: the first pass reported in-sample ECE ≈ 0 everywhere —
+an isotonic fit can always do that — so `calibration_fields` now splits
+the held-out pairs (seeded, 50/50) and reports ECE on the unseen half.
+Held-out ECE: 0.018–0.101 vs raw 0.031–0.223; big wins where raw scores
+were miscalibrated (fairness 0.223→0.037, legitimacy 0.187→0.039), and
+two honest non-improvements reported as such (physharm 0.048→0.049
+already calibrated; environmental 0.089→0.101, small-n overfit). The
+reliability weights now state the review's complaint as numbers:
+physharm 0.258 vs privacy 0.707 vs loyalty 0.821 — a 3× authority
+differential formerly laundered by the pass bit. **Remaining ⚪:**
+`erisml`'s consumption of `reliability_weight` in `MoralVector`
+per-dimension uncertainty (cross-repo); an unweighted consumer is a
+documented, deliberate exception until then.
 
 ### R3 (bifactor numbers) — ✅ published
 

@@ -91,24 +91,42 @@ def calibration_fields(
     auroc: float,
     method: str = "isotonic",
     n_bins: int = 10,
+    eval_frac: float = 0.5,
+    seed: int = 0,
 ) -> dict:
     """The calibration block for a ``Report`` (XBSE_REVIEW_1 F1 closure fields).
 
     ``scores``/``labels`` MUST be the held-out validation pairs, never training
-    pairs. Raw scores are min-max squashed for the raw-ECE reference (ECE needs
-    a [0,1] input; the squash is monotone so ranking is untouched).
+    pairs — and the calibrator itself is honest about its own evaluation: the
+    held-out pairs are split (seeded) into a CAL part that fits the map and an
+    EVAL part that measures ``calibration_ece``, because an isotonic fit can
+    always drive its in-sample ECE to ~0. The shipped map is refit on ALL
+    pairs (best map forward; its honest error is the held-out number). Raw
+    scores are min-max squashed for the raw-ECE reference (monotone, so
+    ranking is untouched).
     """
     s = np.asarray(scores, float)
     y = np.asarray(labels, int)
+    rng = np.random.default_rng(seed)
+    idx = rng.permutation(len(y))
+    n_eval = max(1, int(len(y) * eval_frac))
+    ev, cal_idx = idx[:n_eval], idx[n_eval:]
+    if len(cal_idx) < 2:  # degenerate tiny inputs: fall back to in-sample
+        ev, cal_idx = idx, idx
+    fit = isotonic if method == "isotonic" else platt
     lo, hi = float(s.min()), float(s.max())
     raw01 = (s - lo) / (hi - lo) if hi > lo else np.full_like(s, 0.5)
-    cal = (isotonic if method == "isotonic" else platt)(s, y)
-    p = np.clip(cal(s), 0.0, 1.0)
+    cal_map = fit(s[cal_idx], y[cal_idx])
+    p_ev = np.clip(cal_map(s[ev]), 0.0, 1.0)
+    full_map = fit(s, y)  # shipped forward; measured by the split number above
+    p_full = np.clip(full_map(s), 0.0, 1.0)
     return {
         "calibration_method": method,
-        "calibration_ece": ece(p, y, n_bins),
+        "calibration_ece": ece(p_ev, y[ev], n_bins),  # held-out within held-out
+        "calibration_ece_insample": ece(p_full, y, n_bins),
         "raw_ece": ece(raw01, y, n_bins),
-        "reliability_curve": reliability_curve(p, y, n_bins),
+        "reliability_curve": reliability_curve(p_full, y, n_bins),
         "reliability_weight": reliability_weight(auroc),
         "n_calibration_pairs": int(len(y)),
+        "n_ece_eval_pairs": int(len(ev)),
     }
