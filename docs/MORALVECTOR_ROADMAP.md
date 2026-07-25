@@ -24,7 +24,12 @@ measured, not asserted.
 **[demonstrated]**
 - 8 learned axes pass the pre-registered cross-dataset gate; `rights_respect` fails (framework-
   relative) and runs as a hand-specified rule channel; `identity_attack` discovered, gated
-  (AUROC 0.80, +0.25 over null), wired as a 10th channel; **B1 (2026-07-12)** added `loyalty`
+  (AUROC 0.80, +0.25 over null — *scope:* held-out cross-dataset **structure** over a
+  **jointly-trained** corpus pair (Jigsaw civil-comments + Berkeley MHS, n=6400); a strict
+  train-on-one/test-on-the-other leg and third-corpus confirmation remain open, and the discovery
+  flag overlaps the validation corpus at the family level, so flag-time lift and gate-time AUROC
+  are not fully independent — BDS-2026 referee M5, 2026-07-25), wired as a 10th channel;
+  **B1 (2026-07-12)** added `loyalty`
   (AUROC 0.911) and `purity` (0.811, beats the disgust-lexicon BoW null +0.156) through the same
   gate → **11/12 learned axes validated** (of 12 built: 11 learned pass, `rights` is the hand-rule
   channel). *Not yet wired into the DEME decision vector — that integration is a separate step.*
@@ -36,7 +41,10 @@ measured, not asserted.
   incl. harmful**); equivalence-class averaging selected at θ_d 0.42 (LSO proxy) and **met at scale
   on LLM-generated classes, θ_d 0.219** (red-team back-translation confirms it holds on harmful
   content, 0.301).
-- Learned contraction (leakage-controlled OOF AUROC 0.863) turns the vector into decisions on
+- Learned contraction (leakage-controlled OOF AUROC 0.863 — *scope:* row-level leakage control
+  (77/1600 overlapping rows removed) is not distribution-level; fit and evaluation both draw on
+  civil-comments, so 0.863 is a **within-corpus-family** result and cross-family transfer of the
+  contraction is untested — BDS-2026 referee M5, 2026-07-25) turns the vector into decisions on
   covered categories; admission criterion executed in all three directions (validate / decline /
   retract).
 
