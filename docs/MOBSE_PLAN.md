@@ -1,3 +1,8 @@
+> **SUPERSEDED (2026-09-01).** The plan-of-record for MoBSE is now
+> `erisml-compiler/experiments/MOBSE_PLAN.md` (post-review checkpoint,
+> 2026-07-13), which supersedes this 2026-07-07 copy. Kept for history.
+> See `erisml-lib/docs/CONCEPT_REGISTRY.md` §5.
+
 # MoBSE — plan of record (post-review checkpoint, 2026-07-07)
 
 Checkpointed because we're near context limit and the *sequencing discipline* is the part
